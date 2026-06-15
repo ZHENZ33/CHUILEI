@@ -516,7 +516,8 @@ const App={
   currentPage:'dashboard',
 
   async init(){
-    const cfg=loadCfg();document.getElementById('cfg-url').value=cfg.url||'https://hegxivqvjtknzfoogzng.supabase.co';document.getElementById('cfg-key').value=cfg.key||'sb_publishable_Q9SrFkFU3YHbqeTa3cgwDQ_O8M7ufXt';
+    const cfg=loadCfg();if(!cfg.url||!cfg.key){saveCfg('https://hegxivqvjtknzfoogzng.supabase.co','sb_publishable_Q9SrFkFU3YHbqeTa3cgwDQ_O8M7ufXt');}
+    document.getElementById('cfg-url').value=cfg.url||'https://hegxivqvjtknzfoogzng.supabase.co';document.getElementById('cfg-key').value=cfg.key||'sb_publishable_Q9SrFkFU3YHbqeTa3cgwDQ_O8M7ufXt';
     if(!initSB()){showPage('config-page');return;}
     // 尝试从 sessionStorage 恢复登录
     const saved=sessionStorage.getItem('pm_current_user');

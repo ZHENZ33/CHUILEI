@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>垂类产品管理系统 - 云端协作版</title>
+<title>垂类产品管理系统</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -240,7 +240,6 @@ input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary)
 <div id="login-page" class="page active">
   <div class="login-container"><div class="login-box">
     <div class="login-logo"><div class="logo-icon">📦</div><h1>垂类产品管理系统</h1><p>供应商 · 产品 · 数据一体化管理平台</p></div>
-    <div style="text-align:center;margin-bottom:20px;"><span class="cloud-badge">☁️ Supabase 云端协作版</span></div>
     <form id="login-form">
       <div class="form-group"><label>账号</label><input type="text" id="login-username" placeholder="请输入账号" required></div>
       <div class="form-group"><label>密码</label><input type="password" id="login-password" placeholder="请输入密码" required></div>
@@ -287,6 +286,7 @@ input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary)
       <div class="online-users"><span class="online-dot"></span><span id="online-status">云端已连接</span></div>
       <span class="current-time" id="current-time"></span>
       <div class="topbar-data-btns">
+        <button class="btn-topbar" id="btn-admin-panel" style="display:none;" onclick="window.open('后台_管理面板.html','_blank')">🔧 后台管理</button>
         <button class="btn-topbar" onclick="App.exportBackup()">💾 备份</button>
         <button class="btn-topbar" onclick="App.showImportBackup()">📂 还原</button>
         <button class="btn-topbar" onclick="App.showConfig()">⚙️ 设置</button>
@@ -556,6 +556,7 @@ const App={
   async enterApp(){
     showPage('app-page');document.getElementById('app-page').classList.add('active');
     const uname=currentUser?.display_name||currentUser?.username||'U';document.getElementById('user-avatar').textContent=uname.charAt(0).toUpperCase();document.getElementById('user-name').textContent=uname;document.getElementById('user-role').textContent=currentUser?.role==='admin'?'管理员':'成员';
+    if(currentUser?.role==='admin'){const btn=document.getElementById('btn-admin-panel');if(btn)btn.style.display='inline-flex';}
     await DB.loadAll();this.initProductSupplierSelect();this.showContentPage('dashboard');this.startClock();
   },
 

@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>后台管理 - 垂类产品管理系统</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --primary: #4361ee; --primary-dark: #3a56d4; --success: #10b981; --warning: #f59e0b;
+  --danger: #ef4444; --info: #3b82f6; --bg: #f0f2f7; --surface: #ffffff; --border: #e5e7eb;
+  --text: #1f2937; --text-secondary: #6b7280; --sidebar-bg: #1e2a45; --sidebar-text: #a8b8d8;
+  --sidebar-active: #4361ee; --sidebar-width: 240px; --topbar-h: 60px;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 2px 8px rgba(0,0,0,.06);
+  --shadow-lg: 0 4px 20px rgba(0,0,0,.12); --radius: 10px; --radius-sm: 6px;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }
+.page { display: none; } .page.active { display: block; }
+
+/* Login */
+.login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e2a45 0%, #2d3f6c 50%, #4361ee 100%); position: relative; overflow: hidden; }
+.login-container::before { content: ''; position: absolute; width: 600px; height: 600px; background: rgba(255,255,255,.04); border-radius: 50%; top: -200px; right: -200px; }
+.login-box { background: #fff; border-radius: 16px; padding: 48px 40px; width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,.3); position: relative; z-index: 1; }
+.login-logo { text-align: center; margin-bottom: 36px; } .logo-icon { font-size: 52px; margin-bottom: 12px; }
+.login-logo h1 { font-size: 22px; font-weight: 700; color: #1e2a45; } .login-logo p { color: var(--text-secondary); margin-top: 6px; font-size: 13px; }
+.cloud-badge { display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #e8f0fe, #dbeafe); color: #1a56db; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.login-tip { text-align: center; color: var(--text-secondary); font-size: 12px; margin-top: 16px; }
+.login-error { color: var(--danger); font-size: 13px; text-align: center; margin-top: 10px; display: none; }
+
+/* App Layout */
+#app-page { display: none; min-height: 100vh; } #app-page.active { display: flex; flex-direction: row; }
+#sidebar { width: var(--sidebar-width); min-height: 100vh; background: var(--sidebar-bg); display: flex; flex-direction: column; position: fixed; left: 0; top: 0; bottom: 0; z-index: 100; transition: transform .3s ease; }
+.sidebar-header { padding: 20px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.sidebar-logo { font-size: 28px; } .sidebar-title { color: #fff; font-weight: 700; font-size: 15px; }
+.sidebar-nav { flex: 1; padding: 12px 8px; overflow-y: auto; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: var(--radius-sm); cursor: pointer; color: var(--sidebar-text); transition: all .2s; margin-bottom: 4px; font-size: 14px; }
+.nav-item:hover { background: rgba(255,255,255,.08); color: #fff; } .nav-item.active { background: var(--sidebar-active); color: #fff; }
+.nav-icon { font-size: 17px; width: 22px; text-align: center; }
+.sidebar-footer { padding: 16px; border-top: 1px solid rgba(255,255,255,.08); }
+.user-info { display: flex; align-items: center; gap: 10px; }
+.user-avatar { width: 36px; height: 36px; background: var(--sidebar-active); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; font-size: 15px; }
+.user-name { color: #fff; font-size: 13px; font-weight: 600; } .user-role { color: var(--sidebar-text); font-size: 11px; }
+.logout-btn { margin-left: auto; background: none; border: none; color: var(--sidebar-text); cursor: pointer; font-size: 18px; padding: 4px; border-radius: 4px; transition: color .2s; }
+.logout-btn:hover { color: #fff; }
+
+/* Main */
+#main-content { flex: 1; margin-left: var(--sidebar-width); min-height: 100vh; display: flex; flex-direction: column; transition: margin-left .3s; }
+.topbar { height: var(--topbar-h); background: #fff; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 24px; gap: 16px; position: sticky; top: 0; z-index: 50; box-shadow: var(--shadow); }
+.sidebar-toggle { background: none; border: none; cursor: pointer; font-size: 20px; color: var(--text-secondary); padding: 4px; border-radius: 4px; }
+.sidebar-toggle:hover { color: var(--primary); }
+.breadcrumb { color: var(--text-secondary); font-size: 15px; flex: 1; }
+.current-time { color: var(--text-secondary); font-size: 13px; }
+.online-users { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--success); }
+.online-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; animation: pulse 1.5s ease infinite; }
+@keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.4; transform:scale(.7); } }
+.topbar-data-btns { display: flex; align-items: center; gap: 8px; margin-left: 12px; }
+.btn-topbar { padding: 5px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: #fff; color: var(--text-secondary); font-size: 12px; cursor: pointer; white-space: nowrap; transition: all .15s; }
+.btn-topbar:hover { border-color: var(--primary); color: var(--primary); background: #f0f4ff; }
+
+.content-area { flex: 1; padding: 24px; } .content-page { display: none; } .content-page.active { display: block; }
+.page-header { margin-bottom: 20px; } .page-header h2 { font-size: 20px; font-weight: 700; }
+.page-desc { color: var(--text-secondary); margin-top: 4px; font-size: 13px; }
+
+/* Forms */
+.form-group { margin-bottom: 16px; }
+.form-group label, .form-section-group label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
+.form-group input, .form-group select, .form-group textarea, .form-section-group input, .form-section-group select, .form-section-group textarea { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; color: var(--text); outline: none; transition: border-color .2s, box-shadow .2s; background: #fff; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus, .form-section-group input:focus, .form-section-group select:focus, .form-section-group textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67,97,238,.12); }
+.form-group textarea { resize: vertical; min-height: 80px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; } .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; border: none; outline: none; transition: all .2s; white-space: nowrap; }
+.btn-primary { background: var(--primary); color: #fff; } .btn-primary:hover { background: var(--primary-dark); }
+.btn-success { background: var(--success); color: #fff; } .btn-success:hover { background: #059669; }
+.btn-outline { background: #fff; color: var(--text); border: 1px solid var(--border); } .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+.btn-danger { background: var(--danger); color: #fff; } .btn-danger:hover { background: #dc2626; }
+.btn-full { width: 100%; justify-content: center; padding: 12px; font-size: 15px; }
+.btn-sm { padding: 6px 12px; font-size: 13px; } .btn-xs { padding: 4px 10px; font-size: 12px; border-radius: 4px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* Stats, Charts */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.stat-card { background: #fff; border-radius: var(--radius); padding: 20px; display: flex; align-items: center; gap: 14px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+.stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+.stat-value { font-size: 26px; font-weight: 700; color: var(--text); } .stat-label { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+.stat-trend { font-size: 11px; position: absolute; top: 14px; right: 14px; padding: 2px 6px; border-radius: 10px; }
+.stat-trend.up { background: #e6f4ea; color: var(--success); }
+.dashboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.chart-card { background: #fff; border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+.chart-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: var(--text); } .chart-body { min-height: 180px; }
+
+/* Search Bar */
+.search-bar { background: linear-gradient(135deg, #f0f4ff 0%, #f8fafc 100%); border-radius: var(--radius); padding: 16px 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 16px; box-shadow: var(--shadow); border: 1px solid #e0e7ff; }
+.search-item { display: flex; flex-direction: column; gap: 4px; min-width: 140px; }
+.search-item label { font-size: 12px; color: var(--primary); font-weight: 600; letter-spacing: 0.3px; }
+.search-item input, .search-item select { padding: 7px 10px; border: 1.5px solid #d1d5db; border-radius: var(--radius-sm); font-size: 13px; outline: none; min-width: 130px; background: #fff; transition: border-color .2s, box-shadow .2s; }
+.search-item input:focus, .search-item select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67,97,238,0.12); }
+.search-item input::placeholder { color: #b0b8c8; } .search-item select { cursor: pointer; color: #374151; }
+.search-actions { display: flex; gap: 8px; align-items: flex-end; }
+.action-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.record-count { color: var(--text-secondary); font-size: 13px; margin-left: auto; }
+
+/* Table */
+.table-card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.table-wrapper { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; } thead tr { background: #f8fafc; }
+th { padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+td { padding: 12px 16px; font-size: 13px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+tbody tr:hover { background: #fafbff; } tbody tr:last-child td { border-bottom: none; }
+
+/* Tags */
+.tag { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 10px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+.tag-success { background: #e6f4ea; color: #1a7f3c; } .tag-warning { background: #fff3e0; color: #e65100; }
+.tag-danger { background: #fce8e6; color: #c62828; } .tag-info { background: #e8f0fe; color: #1a56db; }
+.tag-gray { background: #f3f4f6; color: #6b7280; } .tag-purple { background: #f3e8fd; color: #7e22ce; }
+.rating { display: inline-flex; gap: 1px; } .rating .star { color: #fbbf24; } .rating .star.empty { color: #e5e7eb; }
+
+/* Pagination */
+.pagination { display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding: 14px 16px; border-top: 1px solid var(--border); }
+.pagination button { min-width: 32px; height: 32px; padding: 0 10px; border: 1px solid var(--border); background: #fff; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; transition: all .2s; }
+.pagination button:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+.pagination button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.pagination button:disabled { opacity: .4; cursor: not-allowed; }
+
+/* Drawer */
+.drawer-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; align-items: stretch; justify-content: flex-end; }
+.drawer-overlay.open { display: flex; }
+.drawer { width: 620px; max-width: 100%; background: #fff; display: flex; flex-direction: column; box-shadow: -4px 0 24px rgba(0,0,0,.15); animation: slideIn .3s ease; }
+@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+.drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.drawer-header h3 { font-size: 17px; font-weight: 600; }
+.drawer-close { background: none; border: none; cursor: pointer; font-size: 18px; color: var(--text-secondary); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all .2s; }
+.drawer-close:hover { background: #f3f4f6; color: var(--text); }
+.drawer-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
+.drawer-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 24px; border-top: 1px solid var(--border); flex-shrink: 0; background: #fff; }
+.form-section { margin-bottom: 24px; }
+.form-section-title { font-size: 14px; font-weight: 600; color: var(--primary); padding-bottom: 8px; border-bottom: 2px solid #e8f0fe; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+.form-section-group { margin-bottom: 12px; }
+
+/* Modal */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 300; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: #fff; border-radius: var(--radius); width: 680px; max-width: 95%; max-height: 85vh; display: flex; flex-direction: column; box-shadow: var(--shadow-lg); animation: fadeIn .25s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid var(--border); }
+.modal-header h3 { font-size: 17px; font-weight: 600; }
+.modal-close { background: none; border: none; cursor: pointer; font-size: 18px; color: var(--text-secondary); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all .2s; }
+.modal-close:hover { background: #f3f4f6; }
+.modal-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 24px; border-top: 1px solid var(--border); }
+
+.detail-section { margin-bottom: 20px; }
+.detail-section-title { font-size: 14px; font-weight: 600; color: var(--primary); margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid #e8f0fe; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.detail-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 2px; }
+.detail-value { font-size: 14px; color: var(--text); font-weight: 500; }
+
+/* Toast */
+#toast-container { position: fixed; top: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+.toast { background: #fff; border-radius: var(--radius-sm); padding: 12px 16px; box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 10px; min-width: 240px; animation: toastIn .3s ease; border-left: 4px solid transparent; font-size: 14px; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
+.toast.success { border-color: var(--success); } .toast.error { border-color: var(--danger); } .toast.info { border-color: var(--info); }
+
+/* Checkbox, Cert, Platform */
+.checkbox-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.checkbox-item { display: flex; align-items: center; gap: 4px; font-size: 13px; cursor: pointer; background: #f8fafc; border: 1px solid var(--border); border-radius: 4px; padding: 4px 10px; transition: all .2s; user-select: none; }
+.checkbox-item:hover { border-color: var(--primary); }
+.checkbox-item input[type="checkbox"] { accent-color: var(--primary); }
+.checkbox-item.checked { background: #e8f0fe; border-color: var(--primary); color: var(--primary); }
+.cert-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 12px; }
+.cert-item label { min-width: 80px; font-weight: 500; font-size: 13px; }
+.cert-item input[type="checkbox"] { accent-color: var(--primary); }
+.cert-item input[type="date"] { border: 1px solid var(--border); border-radius: 4px; padding: 3px 8px; font-size: 12px; }
+.cert-item input[type="file"] { font-size: 12px; }
+.platform-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.platform-tag { background: #e8f0fe; color: var(--primary); border-radius: 4px; padding: 2px 8px; font-size: 12px; }
+.collect-row { display: flex; gap: 8px; align-items: center; } .collect-row input { flex: 1; }
+.cert-tag { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; white-space: nowrap; border: 1px solid transparent; }
+.link-btn { display: inline-flex; align-items: center; gap: 2px; padding: 3px 10px; background: #e8f0fe; color: #1a56db; border: 1px solid #b6cef5; border-radius: 4px; font-size: 12px; text-decoration: none; cursor: pointer; transition: all .15s; white-space: nowrap; }
+.link-btn:hover { background: #d2e3fc; border-color: #1a56db; }
+.op-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.mt-20 { margin-top: 20px; } .empty-state { text-align: center; padding: 40px; color: var(--text-secondary); }
+.row-index { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #fff; border: 1.5px solid #d1d5db; border-radius: 6px; font-size: 12px; font-weight: 600; color: #4b5563; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; border-radius: 3px; }
+.row-selected { background: #eff6ff !important; } .row-selected:hover { background: #dbeafe !important; }
+
+/* Supplier dropdown */
+.supplier-select-wrapper { position: relative; width: 100%; }
+.supplier-select-wrapper > input[type="text"] { width: 100%; padding: 9px 32px 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; background: #fff; outline: none; transition: border-color .2s, box-shadow .2s; }
+.supplier-select-wrapper > input[type="text"]:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67,97,238,.12); }
+.supplier-select-arrow { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 10px; color: var(--text-secondary); user-select: none; padding: 4px; }
+.supplier-dropdown { display: none; position: absolute; top: 100%; left: 0; right: 0; max-height: 240px; overflow-y: auto; background: #fff; border: 1px solid var(--border); border-radius: 0 0 var(--radius-sm) var(--radius-sm); box-shadow: 0 4px 16px rgba(0,0,0,.12); z-index: 999; margin-top: 2px; }
+.supplier-dropdown.open { display: block; }
+.supplier-dropdown-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; cursor: pointer; font-size: 13px; border-bottom: 1px solid #f3f4f6; transition: background .15s; }
+.supplier-dropdown-item:last-child { border-bottom: none; } .supplier-dropdown-item:hover { background: #f0f4ff; }
+.supplier-dropdown-item.selected { background: #e8f0fe; font-weight: 600; }
+.supplier-dropdown-name { color: var(--text); font-weight: 500; }
+.supplier-dropdown-meta { color: var(--text-secondary); font-size: 11px; white-space: nowrap; margin-left: 8px; }
+.supplier-dropdown-empty { padding: 16px; text-align: center; color: #9ca3af; font-size: 13px; }
+
+/* Loading */
+.loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,.7); z-index: 9998; align-items: center; justify-content: center; }
+.loading-overlay.active { display: flex; }
+.loading-spinner { width: 40px; height: 40px; border: 4px solid #e5e7eb; border-top-color: var(--primary); border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { margin-top: 12px; color: var(--text-secondary); font-size: 14px; }
+
+/* Live Feed */
+.live-feed-card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.live-feed-header { display: flex; align-items: center; gap: 8px; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+.live-feed-body { max-height: 260px; overflow-y: auto; padding: 8px 16px; }
+.feed-item { display: flex; align-items: center; gap: 8px; padding: 8px 4px; border-bottom: 1px solid #f3f4f6; font-size: 13px; }
+.feed-item:last-child { border-bottom: none; }
+.feed-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.feed-icon { font-size: 16px; flex-shrink: 0; }
+.feed-text { flex: 1; color: #374151; line-height: 1.4; } .feed-text strong { color: #1f2937; }
+.feed-time { font-size: 11px; color: #9ca3af; white-space: nowrap; flex-shrink: 0; }
+
+/* Config */
+.config-section { margin-bottom: 16px; }
+.config-section label { display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.config-section input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; font-family: monospace; }
+.config-section .hint { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+/* SQL Box */
+.sql-box { background: #1e2a45; color: #a8b8d8; border-radius: 8px; padding: 16px; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.6; overflow-x: auto; white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
+
+/* Settings Cards */
+.settings-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+.settings-card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; }
+.settings-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+/* Backup Cards */
+.backup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.backup-card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; }
+.backup-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.backup-card p { color: var(--text-secondary); font-size: 13px; margin-bottom: 16px; line-height: 1.6; }
+.progress-wrap { margin-top: 16px; display: none; }
+.progress-bar-bg { width: 100%; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: var(--primary); border-radius: 4px; transition: width .3s; width: 0; }
+.progress-text { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+.file-input-wrap { margin-bottom: 12px; }
+.file-input-wrap input[type="file"] { font-size: 13px; }
+
+@media (max-width: 768px) {
+  :root { --sidebar-width: 0px; } #sidebar { transform: translateX(-240px); } #sidebar.open { transform: translateX(0); width: 240px; }
+  #main-content { margin-left: 0; } .form-row, .form-row-3 { grid-template-columns: 1fr; }
+  .drawer { width: 100%; } .stats-grid { grid-template-columns: 1fr 1fr; } .dashboard-grid { grid-template-columns: 1fr; }
+  .search-bar { flex-direction: column; } .search-item { width: 100%; }
+  .backup-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading-overlay" class="loading-overlay">
+  <div style="text-align:center;">
+    <div class="loading-spinner"></div>
+    <div class="loading-text" id="loading-text">加载中...</div>
+  </div>
+</div>
+
+<!-- Login Page -->
+<div id="login-page" class="page active">
+  <div class="login-container"><div class="login-box">
+    <div class="login-logo">
+      <div class="logo-icon">🛡️</div>
+      <h1>后台管理 · 垂类产品管理系统</h1>
+      <p>仅限管理员访问</p>
+    </div>
+    <div style="text-align:center;margin-bottom:20px;"><span class="cloud-badge">🔐 管理员后台</span></div>
+    <form id="login-form">
+      <div class="form-group"><label>账号</label><input type="text" id="login-username" placeholder="请输入管理员账号" required></div>
+      <div class="form-group"><label>密码</label><input type="password" id="login-password" placeholder="请输入密码" required></div>
+      <button type="submit" class="btn btn-primary btn-full" id="login-btn">登 录</button>
+    </form>
+    <div id="login-error" class="login-error"></div>
+    <div style="text-align:center;margin-top:16px;">
+      <p class="login-tip" style="margin-top:0;"><button class="btn btn-xs btn-outline" onclick="App.showConfig()" type="button">⚙️ 连接设置</button></p>
+    </div>
+  </div></div>
+</div>
+
+<!-- Config Page -->
+<div id="config-page" class="page">
+  <div class="login-container"><div class="login-box" style="width:480px;">
+    <div class="login-logo"><div class="logo-icon">⚙️</div><h1>Supabase 连接配置</h1><p>输入您的 Supabase 项目凭证</p></div>
+    <div class="config-section"><label>Supabase URL</label><input type="url" id="cfg-url" placeholder="https://xxxxx.supabase.co"><p class="hint">在 Supabase Dashboard > Settings > API 中获取</p></div>
+    <div class="config-section"><label>Anon Key（公开密钥）</label><input type="text" id="cfg-key" placeholder="eyJhbGciOiJIUzI1NiIs..."><p class="hint">使用 project > anon key（公开密钥，安全受 RLS 保护）</p></div>
+    <div style="display:flex;gap:10px;margin-top:20px;"><button class="btn btn-primary" onclick="App.saveConfig()" style="flex:1;">保存并返回</button><button class="btn btn-outline" onclick="App.showLogin()" style="flex:1;">取消</button></div>
+  </div></div>
+</div>
+
+<!-- Main App -->
+<div id="app-page" class="page">
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">🛡️</div>
+      <div class="sidebar-title">后台管理</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" data-page="users"><span class="nav-icon">👥</span><span class="nav-text">用户管理</span></div>
+      <div class="nav-item" data-page="logs"><span class="nav-icon">📋</span><span class="nav-text">操作日志</span></div>
+      <div class="nav-item" data-page="backup"><span class="nav-icon">💾</span><span class="nav-text">数据备份</span></div>
+      <div class="nav-item" data-page="settings"><span class="nav-icon">⚙️</span><span class="nav-text">系统设置</span></div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar">A</div>
+        <div class="user-detail"><div class="user-name" id="user-name">管理员</div><div class="user-role" id="user-role">管理员</div></div>
+        <button class="logout-btn" id="logout-btn" title="退出登录">⏻</button>
+      </div>
+    </div>
+  </aside>
+  <main id="main-content">
+    <header class="topbar">
+      <button id="sidebar-toggle" class="sidebar-toggle">☰</button>
+      <div class="breadcrumb" id="breadcrumb">用户管理</div>
+      <div class="online-users"><span class="online-dot"></span><span id="online-status">云端已连接</span></div>
+      <span class="current-time" id="current-time"></span>
+      <div class="topbar-data-btns">
+        <button class="btn-topbar" onclick="window.open('前端_产品管理系统.html','_blank')">📦 返回前台</button>
+        <button class="btn-topbar" id="topbar-logout-btn">⏻ 退出登录</button>
+      </div>
+    </header>
+    <div class="content-area">
+      <!-- Users Page -->
+      <div id="page-users" class="content-page active">
+        <div class="page-header"><h2>用户管理</h2><p class="page-desc">管理系统用户账号与权限</p></div>
+        <div class="search-bar">
+          <div class="search-item"><label>搜索</label><input type="text" id="users-search" placeholder="用户名 / 显示名" onkeydown="if(event.key==='Enter')UserMgr.search()"></div>
+          <div class="search-actions">
+            <button class="btn btn-sm btn-primary" onclick="UserMgr.search()">🔍 搜索</button>
+            <button class="btn btn-sm btn-success" onclick="UserMgr.openAdd()">➕ 添加用户</button>
+          </div>
+        </div>
+        <div class="table-card">
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>用户名</th><th>显示名</th><th>角色</th><th>创建时间</th><th>操作</th></tr></thead>
+              <tbody id="users-tbody"></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="users-pagination"></div>
+        </div>
+      </div>
+
+      <!-- Logs Page -->
+      <div id="page-logs" class="content-page">
+        <div class="page-header"><h2>操作日志</h2><p class="page-desc">查看系统操作记录</p></div>
+        <div class="table-card">
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>时间</th><th>操作</th><th>实体类型</th><th>实体名称</th><th>操作详情</th></tr></thead>
+              <tbody id="logs-tbody"></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="logs-pagination"></div>
+        </div>
+      </div>
+
+      <!-- Backup Page -->
+      <div id="page-backup" class="content-page">
+        <div class="page-header"><h2>数据备份</h2><p class="page-desc">导出和恢复系统数据</p></div>
+        <div class="backup-grid">
+          <div class="backup-card">
+            <h3>📥 导出备份</h3>
+            <p>将当前所有供应商和产品数据导出为 JSON 文件。建议定期备份以防止数据丢失。</p>
+            <button class="btn btn-primary" onclick="BackupMgr.exportBackup()">💾 导出数据</button>
+          </div>
+          <div class="backup-card">
+            <h3>📤 恢复备份</h3>
+            <p>从之前导出的 JSON 备份文件中恢复数据。恢复操作将覆盖现有数据，请谨慎操作。</p>
+            <div class="file-input-wrap"><input type="file" id="backup-file" accept=".json"></div>
+            <button class="btn btn-success" onclick="BackupMgr.restoreBackup()">🔄 开始恢复</button>
+            <div class="progress-wrap" id="restore-progress">
+              <div class="progress-bar-bg"><div class="progress-bar-fill" id="restore-progress-bar"></div></div>
+              <div class="progress-text" id="restore-progress-text">准备中...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Page -->
+      <div id="page-settings" class="content-page">
+        <div class="page-header"><h2>系统设置</h2><p class="page-desc">配置系统连接与数据库</p></div>
+        <div class="settings-grid">
+          <div class="settings-card">
+            <h3>🔗 Supabase 连接配置</h3>
+            <div class="form-group"><label>Supabase URL</label><input type="url" id="cfg-url-2" placeholder="https://xxxxx.supabase.co"></div>
+            <div class="form-group"><label>Anon Key</label><input type="text" id="cfg-key-2" placeholder="eyJhbGciOiJIUzI1NiIs..."></div>
+            <div style="display:flex;gap:10px;margin-top:8px;">
+              <button class="btn btn-primary" onclick="Settings.saveConfig()">💾 保存配置</button>
+              <button class="btn btn-outline" onclick="Settings.testConnection()">🔌 测试连接</button>
+            </div>
+          </div>
+          <div class="settings-card">
+            <h3>🔧 数据库初始化</h3>
+            <p style="color:var(--text-secondary);font-size:13px;margin-bottom:12px;line-height:1.6;">
+              首次使用需在 Supabase SQL Editor 中执行以下 SQL 脚本，创建用户管理所需的 RPC 函数。
+            </p>
+            <div class="sql-box" id="sql-display"></div>
+            <div style="margin-top:12px;">
+              <button class="btn btn-sm btn-outline" onclick="Settings.copySQL('functions')">📋 复制 RPC 函数 SQL</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- User Edit Modal -->
+<div id="user-modal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="user-modal-title">编辑用户</h3>
+      <button class="modal-close" onclick="UserMgr.closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="user-form"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="UserMgr.closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="UserMgr.saveUser()">💾 保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<script>
+/* ===== Utility Functions ===== */
+function toast(msg, type = 'success') {
+  const c = document.getElementById('toast-container');
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.innerHTML = '<span>' + (icons[type] || '') + '</span><span>' + msg + '</span>';
+  c.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => el.remove(), 300); }, 3000);
+}
+
+function showLoading(t) {
+  document.getElementById('loading-text').textContent = t || '加载中...';
+  document.getElementById('loading-overlay').classList.add('active');
+}
+
+function hideLoading() {
+  document.getElementById('loading-overlay').classList.remove('active');
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function formatTime(ts) {
+  if (!ts) return '-';
+  const d = new Date(ts);
+  return d.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+/* ===== Supabase Init ===== */
+const SUPABASE_CONFIG_KEY = 'pm_supabase_config';
+
+function loadCfg() {
+  try {
+    const raw = localStorage.getItem(SUPABASE_CONFIG_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return {};
+}
+
+function saveCfg(u, k) {
+  localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify({ url: u, key: k }));
+}
+
+let sb = null, currentUser = null;
+
+function initSB() {
+  const c = loadCfg();
+  if (c.url && c.key) {
+    try {
+      sb = window.supabase.createClient(c.url, c.key);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  return false;
+}
+
+/* ===== App Controller ===== */
+const App = {
+  currentPage: 'users',
+
+  async init() {
+    const cfg = loadCfg();
+    if (!cfg.url || !cfg.key) {
+      saveCfg('https://hegxivqvjtknzfoogzng.supabase.co', 'sb_publishable_Q9SrFkFU3YHbqeTa3cgwDQ_O8M7ufXt');
+    }
+    // Fill config forms
+    const c = loadCfg();
+    document.getElementById('cfg-url').value = c.url || '';
+    document.getElementById('cfg-key').value = c.key || '';
+    document.getElementById('cfg-url-2').value = c.url || '';
+    document.getElementById('cfg-key-2').value = c.key || '';
+
+    if (!initSB()) {
+      showPage('config-page');
+      return;
+    }
+
+    // Try to restore login from sessionStorage
+    const saved = sessionStorage.getItem('pm_current_user');
+    if (saved) {
+      try {
+        currentUser = JSON.parse(saved);
+        if (currentUser.role !== 'admin') {
+          toast('仅管理员可访问后台', 'error');
+          setTimeout(() => { window.location.href = '前端_产品管理系统.html'; }, 2000);
+          return;
+        }
+        await this.enterApp();
+        return;
+      } catch (e) {}
+    }
+
+    showPage('login-page');
+    this.bindEvents();
+  },
+
+  bindEvents() {
+    // Login form
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('login-username').value.trim();
+      const pw = document.getElementById('login-password').value;
+      const errEl = document.getElementById('login-error');
+
+      if (!username || !pw) {
+        errEl.textContent = '请输入账号和密码';
+        errEl.style.display = 'block';
+        return;
+      }
+      errEl.style.display = 'none';
+      document.getElementById('login-btn').disabled = true;
+      document.getElementById('login-btn').textContent = '登录中...';
+
+      try {
+        const { data, error } = await sb.rpc('authenticate_user', { p_username: username, p_password: pw });
+        if (error || !data || data.length === 0) {
+          errEl.textContent = error ? error.message : '账号或密码错误';
+          errEl.style.display = 'block';
+          document.getElementById('login-btn').disabled = false;
+          document.getElementById('login-btn').textContent = '登 录';
+          return;
+        }
+        currentUser = data[0];
+        if (currentUser.role !== 'admin') {
+          toast('仅管理员可访问后台', 'error');
+          setTimeout(() => { window.location.href = '前端_产品管理系统.html'; }, 2000);
+          return;
+        }
+        sessionStorage.setItem('pm_current_user', JSON.stringify(currentUser));
+        toast('登录成功');
+        await this.enterApp();
+      } catch (err) {
+        errEl.textContent = '连接失败: ' + err.message;
+        errEl.style.display = 'block';
+        document.getElementById('login-btn').disabled = false;
+        document.getElementById('login-btn').textContent = '登 录';
+      }
+    });
+
+    // Logout
+    const doLogout = () => {
+      currentUser = null;
+      sessionStorage.removeItem('pm_current_user');
+      showPage('login-page');
+      document.getElementById('login-username').value = '';
+      document.getElementById('login-password').value = '';
+      document.getElementById('login-error').style.display = 'none';
+      document.getElementById('login-btn').disabled = false;
+      document.getElementById('login-btn').textContent = '登 录';
+      if (this._clockTimer) clearInterval(this._clockTimer);
+    };
+    document.getElementById('logout-btn').addEventListener('click', doLogout);
+    document.getElementById('topbar-logout-btn').addEventListener('click', doLogout);
+
+    // Sidebar nav
+    document.querySelectorAll('.nav-item').forEach(el => {
+      el.addEventListener('click', () => this.showContentPage(el.dataset.page));
+    });
+
+    // Sidebar toggle
+    document.getElementById('sidebar-toggle').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.toggle('open');
+    });
+  },
+
+  async enterApp() {
+    showPage('app-page');
+    const uname = currentUser?.display_name || currentUser?.username || 'A';
+    document.getElementById('user-avatar').textContent = uname.charAt(0).toUpperCase();
+    document.getElementById('user-name').textContent = uname;
+    document.getElementById('user-role').textContent = '管理员';
+    this.showContentPage('users');
+    this.startClock();
+  },
+
+  showContentPage(page) {
+    this.currentPage = page;
+    document.querySelectorAll('.content-page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
+    const labels = { users: '用户管理', logs: '操作日志', backup: '数据备份', settings: '系统设置' };
+    document.getElementById('breadcrumb').textContent = labels[page] || page;
+    // Close sidebar on mobile
+    document.getElementById('sidebar').classList.remove('open');
+    if (page === 'users') UserMgr.render();
+    if (page === 'logs') LogView.render();
+    if (page === 'backup') BackupMgr.render();
+    if (page === 'settings') Settings.render();
+  },
+
+  startClock() {
+    if (this._clockTimer) clearInterval(this._clockTimer);
+    const update = () => {
+      const now = new Date();
+      document.getElementById('current-time').textContent = now.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    };
+    update();
+    this._clockTimer = setInterval(update, 1000);
+  },
+
+  showLogin() {
+    showPage('login-page');
+  },
+
+  showConfig() {
+    const c = loadCfg();
+    document.getElementById('cfg-url').value = c.url || '';
+    document.getElementById('cfg-key').value = c.key || '';
+    showPage('config-page');
+  },
+
+  saveConfig() {
+    const u = document.getElementById('cfg-url').value.trim();
+    const k = document.getElementById('cfg-key').value.trim();
+    if (!u || !k) { toast('请填写完整', 'error'); return; }
+    saveCfg(u, k);
+    sb = window.supabase.createClient(u, k);
+    toast('配置已保存');
+    showPage('login-page');
+  }
+};
+
+/* ===== User Manager ===== */
+const UserMgr = {
+  users: [], page: 1, pageSize: 10, editId: null,
+
+  async loadUsers() {
+    const { data, error } = await sb.from('users').select('*').order('created_at', { ascending: true });
+    if (error) throw error;
+    this.users = data || [];
+  },
+
+  async render() {
+    showLoading('加载用户列表...');
+    try {
+      await this.loadUsers();
+      this.renderTable();
+    } catch (e) {
+      toast('加载失败: ' + e.message, 'error');
+    } finally {
+      hideLoading();
+    }
+  },
+
+  renderTable() {
+    const start = (this.page - 1) * this.pageSize;
+    const paged = this.users.slice(start, start + this.pageSize);
+    const tbody = document.getElementById('users-tbody');
+    if (!paged.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">暂无用户</td></tr>';
+    } else {
+      tbody.innerHTML = paged.map(u => {
+        const isSelf = u.id === currentUser?.id;
+        return '<tr>' +
+          '<td>' + u.username + '</td>' +
+          '<td>' + (u.display_name || '-') + '</td>' +
+          '<td>' + (u.role === 'admin' ? '<span class="tag tag-danger">管理员</span>' : '<span class="tag tag-info">成员</span>') + '</td>' +
+          '<td>' + (u.created_at ? new Date(u.created_at).toLocaleDateString('zh-CN') : '-') + '</td>' +
+          '<td><div class="op-btns">' +
+            '<button class="btn btn-xs btn-primary" onclick="UserMgr.openEdit(\'' + u.id + '\')">编辑</button>' +
+            '<button class="btn btn-xs btn-danger" ' + (isSelf ? 'disabled' : '') + ' onclick="UserMgr.deleteUser(\'' + u.id + '\')">删除</button>' +
+          '</div></td>' +
+        '</tr>';
+      }).join('');
+    }
+    this.renderPagination();
+  },
+
+  renderPagination() {
+    const total = Math.ceil(this.users.length / this.pageSize);
+    const el = document.getElementById('users-pagination');
+    if (total <= 1) { el.innerHTML = ''; return; }
+    let html = '<button ' + (this.page <= 1 ? 'disabled' : '') + ' onclick="UserMgr.goPage(' + (this.page - 1) + ')">上一页</button>';
+    for (let i = 1; i <= total; i++) {
+      if (total > 7 && Math.abs(i - this.page) > 2 && i !== 1 && i !== total) {
+        if (i === this.page - 3 || i === this.page + 3) html += '<button disabled>...</button>';
+        continue;
+      }
+      html += '<button class="' + (i === this.page ? 'active' : '') + '" onclick="UserMgr.goPage(' + i + ')">' + i + '</button>';
+    }
+    html += '<button ' + (this.page >= total ? 'disabled' : '') + ' onclick="UserMgr.goPage(' + (this.page + 1) + ')">下一页</button>';
+    el.innerHTML = html;
+  },
+
+  goPage(p) {
+    const total = Math.ceil(this.users.length / this.pageSize);
+    if (p < 1 || p > total) return;
+    this.page = p;
+    this.renderTable();
+  },
+
+  openAdd() {
+    this.editId = null;
+    document.getElementById('user-modal-title').textContent = '添加用户';
+    document.getElementById('user-form').innerHTML =
+      '<div class="form-group"><label>用户名 *</label><input type="text" id="uf-username" placeholder="请输入用户名"></div>' +
+      '<div class="form-group"><label>密码 *</label><input type="password" id="uf-password" placeholder="请输入密码"></div>' +
+      '<div class="form-group"><label>显示名</label><input type="text" id="uf-display" placeholder="请输入显示名"></div>' +
+      '<div class="form-group"><label>角色</label><select id="uf-role"><option value="member">成员</option><option value="admin">管理员</option></select></div>';
+    document.getElementById('user-modal').classList.add('open');
+  },
+
+  openEdit(id) {
+    this.editId = id;
+    const u = this.users.find(x => x.id === id);
+    if (!u) return;
+    document.getElementById('user-modal-title').textContent = '编辑用户';
+    document.getElementById('user-form').innerHTML =
+      '<div class="form-group"><label>用户名</label><input type="text" id="uf-username" value="' + u.username + '"></div>' +
+      '<div class="form-group"><label>密码（留空则不修改）</label><input type="password" id="uf-password" placeholder="留空则不修改密码"></div>' +
+      '<div class="form-group"><label>显示名</label><input type="text" id="uf-display" value="' + (u.display_name || '') + '"></div>' +
+      '<div class="form-group"><label>角色</label><select id="uf-role"><option value="member" ' + (u.role === 'member' ? 'selected' : '') + '>成员</option><option value="admin" ' + (u.role === 'admin' ? 'selected' : '') + '>管理员</option></select></div>';
+    document.getElementById('user-modal').classList.add('open');
+  },
+
+  async saveUser() {
+    const username = document.getElementById('uf-username').value.trim();
+    const password = document.getElementById('uf-password').value;
+    const display = document.getElementById('uf-display').value.trim();
+    const role = document.getElementById('uf-role').value;
+
+    if (!username) { toast('请输入用户名', 'error'); return; }
+    if (!this.editId && !password) { toast('请输入密码', 'error'); return; }
+
+    try {
+      if (this.editId) {
+        const { error } = await sb.rpc('update_user', {
+          p_id: this.editId,
+          p_username: username,
+          p_password: password || null,
+          p_role: role,
+          p_display_name: display || null
+        });
+        if (error) {
+          if (error.message.includes('function') || error.message.includes('exist')) {
+            toast('请先在系统设置中执行数据库初始化SQL', 'error');
+            return;
+          }
+          throw error;
+        }
+        toast('用户已更新');
+      } else {
+        const { error } = await sb.rpc('create_user', {
+          p_username: username,
+          p_password: password,
+          p_role: role,
+          p_display_name: display || null
+        });
+        if (error) {
+          if (error.message.includes('function') || error.message.includes('exist')) {
+            toast('请先在系统设置中执行数据库初始化SQL', 'error');
+            return;
+          }
+          throw error;
+        }
+        toast('用户已添加');
+      }
+      this.closeModal();
+      await this.render();
+    } catch (e) {
+      toast('保存失败: ' + e.message, 'error');
+    }
+  },
+
+  async deleteUser(id) {
+    if (!confirm('确认删除该用户？此操作不可撤销。')) return;
+    try {
+      const { error } = await sb.from('users').delete().eq('id', id);
+      if (error) throw error;
+      toast('已删除');
+      await this.render();
+    } catch (e) {
+      toast('删除失败: ' + e.message, 'error');
+    }
+  },
+
+  closeModal() {
+    document.getElementById('user-modal').classList.remove('open');
+  },
+
+  search() {
+    const kw = document.getElementById('users-search').value.toLowerCase().trim();
+    if (kw) {
+      const filtered = this.users.filter(u =>
+        u.username.toLowerCase().includes(kw) || (u.display_name || '').toLowerCase().includes(kw)
+      );
+      const orig = this.users;
+      this.users = filtered;
+      this.page = 1;
+      this.renderTable();
+      this.users = orig;
+    } else {
+      this.render();
+    }
+  }
+};
+
+/* ===== Log View ===== */
+const LogView = {
+  logs: [], page: 1, pageSize: 20,
+
+  async loadLogs() {
+    try {
+      const { data, error } = await sb.from('activity_log').select('*').order('created_at', { ascending: false }).limit(200);
+      if (error) {
+        if (error.message.includes('exist')) { this.logs = []; return; }
+        throw error;
+      }
+      this.logs = data || [];
+    } catch (e) {
+      this.logs = [];
+    }
+  },
+
+  async render() {
+    showLoading('加载日志...');
+    try {
+      await this.loadLogs();
+      this.renderTable();
+    } catch (e) {
+      toast('加载失败: ' + e.message, 'error');
+    } finally {
+      hideLoading();
+    }
+  },
+
+  renderTable() {
+    const start = (this.page - 1) * this.pageSize;
+    const paged = this.logs.slice(start, start + this.pageSize);
+    const tbody = document.getElementById('logs-tbody');
+    if (!paged.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">暂无日志</td></tr>';
+    } else {
+      const actionLabels = {
+        create_supplier: '新增供应商', update_supplier: '更新供应商', delete_supplier: '删除供应商',
+        create_product: '新增产品', update_product: '更新产品', delete_product: '删除产品'
+      };
+      tbody.innerHTML = paged.map(a => {
+        return '<tr>' +
+          '<td style="white-space:nowrap;">' + (a.created_at ? new Date(a.created_at).toLocaleString('zh-CN') : '-') + '</td>' +
+          '<td>' + (actionLabels[a.action] || a.action) + '</td>' +
+          '<td>' + (a.entity_type === 'supplier' ? '供应商' : '产品') + '</td>' +
+          '<td>' + (a.entity_name || '-') + '</td>' +
+          '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">' + JSON.stringify(a.detail || {}).substring(0, 80) + '</td>' +
+        '</tr>';
+      }).join('');
+    }
+    this.renderPagination();
+  },
+
+  renderPagination() {
+    const total = Math.ceil(this.logs.length / this.pageSize);
+    const el = document.getElementById('logs-pagination');
+    if (total <= 1) { el.innerHTML = ''; return; }
+    let html = '<button ' + (this.page <= 1 ? 'disabled' : '') + ' onclick="LogView.goPage(' + (this.page - 1) + ')">上一页</button>';
+    for (let i = 1; i <= total; i++) {
+      if (total > 7 && Math.abs(i - this.page) > 2 && i !== 1 && i !== total) {
+        if (i === this.page - 3 || i === this.page + 3) html += '<button disabled>...</button>';
+        continue;
+      }
+      html += '<button class="' + (i === this.page ? 'active' : '') + '" onclick="LogView.goPage(' + i + ')">' + i + '</button>';
+    }
+    html += '<button ' + (this.page >= total ? 'disabled' : '') + ' onclick="LogView.goPage(' + (this.page + 1) + ')">下一页</button>';
+    el.innerHTML = html;
+  },
+
+  goPage(p) {
+    const total = Math.ceil(this.logs.length / this.pageSize);
+    if (p < 1 || p > total) return;
+    this.page = p;
+    this.renderTable();
+  }
+};
+
+/* ===== Backup Manager ===== */
+const BackupMgr = {
+  render() {
+    // Page content is static in HTML, nothing dynamic to render
+  },
+
+  async exportBackup() {
+    showLoading('导出数据...');
+    try {
+      const { data: suppliers } = await sb.from('suppliers').select('*');
+      const { data: products } = await sb.from('products').select('*');
+      const json = JSON.stringify({
+        _version: 3,
+        _type: 'supabase-backup',
+        _exportTime: new Date().toISOString(),
+        suppliers: suppliers || [],
+        products: products || []
+      }, null, 2);
+      const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const d = new Date();
+      a.href = url;
+      a.download = '产品台账备份_后台_' + d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0') + '.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('备份已下载');
+    } catch (e) {
+      toast('导出失败: ' + e.message, 'error');
+    } finally {
+      hideLoading();
+    }
+  },
+
+  async restoreBackup() {
+    const file = document.getElementById('backup-file').files[0];
+    if (!file) { toast('请选择备份文件', 'info'); return; }
+    const prog = document.getElementById('restore-progress');
+    const bar = document.getElementById('restore-progress-bar');
+    const txt = document.getElementById('restore-progress-text');
+    prog.style.display = 'block';
+    bar.style.width = '0%';
+    txt.textContent = '准备中...';
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if (!Array.isArray(data.suppliers) || !Array.isArray(data.products)) {
+        throw new Error('格式不正确，缺少 suppliers 或 products 字段');
+      }
+
+      let sc = 0, pc = 0;
+      const total = data.suppliers.length + data.products.length;
+
+      for (const s of data.suppliers) {
+        await sb.from('suppliers').upsert({
+          name: s.name,
+          contact: s.contact,
+          phone: s.phone,
+          province: s.province || null,
+          city: s.city || null,
+          category: s.category,
+          business: s.business || '',
+          service: s.service || '',
+          rating: s.rating || 'B级',
+          status: s.status || '合作中',
+          payment: s.payment || '月结',
+          return_policy: s.return_policy || s.returnPolicy || '',
+          shop_url: s.shop_url || s.shopUrl || '',
+          order_url: s.order_url || s.orderUrl || '',
+          address: s.address || '',
+          founded: s.founded || null,
+          employees: s.employees || '',
+          annual: s.annual || '',
+          qualification: s.qualification || '',
+          remark: s.remark || ''
+        }, { onConflict: 'name' });
+        sc++;
+        const pct = Math.round((sc / total) * 100);
+        bar.style.width = pct + '%';
+        txt.textContent = '供应商 ' + sc + '/' + data.suppliers.length;
+      }
+
+      for (const p of data.products) {
+        await sb.from('products').upsert({
+          id: p.id,
+          name: p.name,
+          cat1: p.cat1,
+          cat2: p.cat2 || '',
+          cat3: p.cat3 || '',
+          supplier_id: p.supplier_id || null,
+          supplier_name: p.supplier_name || '',
+          platforms: p.platforms || [],
+          status: p.status || '上架中',
+          order_url: p.order_url || p.orderUrl || '',
+          remark: p.remark || '',
+          certs: p.certs || {}
+        }, { onConflict: 'id' });
+        pc++;
+        const pct = Math.round(((sc + pc) / total) * 100);
+        bar.style.width = pct + '%';
+        txt.textContent = '产品 ' + pc + '/' + data.products.length;
+      }
+
+      txt.textContent = '恢复完成';
+      toast('恢复完成：' + sc + ' 供应商、' + pc + ' 产品');
+    } catch (e) {
+      toast('恢复失败: ' + e.message, 'error');
+      txt.textContent = '失败: ' + e.message;
+    } finally {
+      setTimeout(() => { prog.style.display = 'none'; }, 3000);
+    }
+  }
+};
+
+/* ===== Settings ===== */
+const Settings = {
+  render() {
+    const cfg = loadCfg();
+    document.getElementById('cfg-url-2').value = cfg.url || '';
+    document.getElementById('cfg-key-2').value = cfg.key || '';
+    document.getElementById('sql-display').textContent = SQL_FUNCTIONS;
+  },
+
+  saveConfig() {
+    const u = document.getElementById('cfg-url-2').value.trim();
+    const k = document.getElementById('cfg-key-2').value.trim();
+    if (!u || !k) { toast('请填写完整', 'error'); return; }
+    saveCfg(u, k);
+    sb = window.supabase.createClient(u, k);
+    document.getElementById('cfg-url').value = u;
+    document.getElementById('cfg-key').value = k;
+    toast('配置已保存，连接已更新');
+  },
+
+  async testConnection() {
+    showLoading('测试连接...');
+    try {
+      const { data, error } = await sb.from('users').select('id').limit(1);
+      if (error) throw error;
+      toast('连接成功', 'success');
+    } catch (e) {
+      toast('连接失败: ' + e.message, 'error');
+    } finally {
+      hideLoading();
+    }
+  },
+
+  copySQL(type) {
+    const sql = SQL_FUNCTIONS;
+    navigator.clipboard.writeText(sql).then(() => {
+      toast('已复制到剪贴板');
+    }).catch(() => {
+      // Fallback for older browsers
+      const ta = document.createElement('textarea');
+      ta.value = sql;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      toast('已复制到剪贴板');
+    });
+  }
+};
+
+/* ===== SQL Functions ===== */
+const SQL_FUNCTIONS = `-- 创建用户管理 RPC 函数（在 Supabase SQL Editor 中执行）
+
+-- 新增用户
+CREATE OR REPLACE FUNCTION create_user(p_username TEXT, p_password TEXT, p_role TEXT, p_display_name TEXT)
+RETURNS UUID AS $$
+DECLARE
+  new_id UUID;
+BEGIN
+  INSERT INTO users (username, password_hash, role, display_name)
+  VALUES (p_username, crypt(p_password, gen_salt('bf')), p_role, p_display_name)
+  RETURNING id INTO new_id;
+  RETURN new_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 更新用户
+CREATE OR REPLACE FUNCTION update_user(p_id UUID, p_username TEXT, p_password TEXT, p_role TEXT, p_display_name TEXT)
+RETURNS VOID AS $$
+BEGIN
+  IF p_password IS NOT NULL AND p_password != '' THEN
+    UPDATE users SET username=p_username, password_hash=crypt(p_password, gen_salt('bf')), role=p_role, display_name=p_display_name WHERE id=p_id;
+  ELSE
+    UPDATE users SET username=p_username, role=p_role, display_name=p_display_name WHERE id=p_id;
+  END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;`;
+
+/* ===== Init ===== */
+document.addEventListener('DOMContentLoaded', () => App.init());
+</script>
+</body>
+</html>

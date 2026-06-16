@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 300px;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px;
+    color: #1f2937;
+    background: #fff;
+  }
+  .header {
+    background: linear-gradient(135deg, #4361ee, #3a0ca3);
+    color: #fff;
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .header h2 { font-size: 16px; font-weight: 600; }
+  .header p { font-size: 11px; opacity: 0.8; margin-top: 4px; }
+  .content { padding: 14px 16px; }
+  .section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 8px;
+    margin-top: 10px;
+  }
+  .section-title:first-child { margin-top: 0; }
+  .info-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 13px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .badge-active { background: #d1fae5; color: #065f46; }
+  .badge-none { background: #f3f4f6; color: #9ca3af; }
+  .supported-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .platform-tag {
+    padding: 2px 8px;
+    background: #eef2ff;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #4338ca;
+  }
+  .links { padding: 0 16px 14px; }
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    text-align: center;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+    margin-bottom: 8px;
+  }
+  .btn-primary {
+    background: #4361ee;
+    color: #fff;
+  }
+  .btn-primary:hover { background: #3a56d4; }
+  .btn-secondary {
+    background: #f3f4f6;
+    color: #374151;
+  }
+  .btn-secondary:hover { background: #e5e7eb; }
+  .tip-box {
+    margin-top: 10px;
+    padding: 10px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #92400e;
+    line-height: 1.6;
+  }
+  .tip-box strong { color: #d97706; }
+  .data-preview {
+    margin-top: 8px;
+    padding: 10px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #166534;
+    display: none;
+    line-height: 1.6;
+  }
+  .data-preview .label { font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h2>📋 垂类采集助手</h2>
+    <p>采集供应商 → 自动填表</p>
+  </div>
+  <div class="content">
+    <div class="section-title">采集状态</div>
+    <div class="info-row">
+      <span id="pending-badge" class="badge badge-none">暂无数据</span>
+      <span id="data-summary" style="font-size:12px;color:#6b7280;"></span>
+    </div>
+    <div id="data-preview" class="data-preview"></div>
+
+    <div class="section-title">支持平台</div>
+    <div class="supported-list">
+      <span class="platform-tag">1688</span>
+      <span class="platform-tag">淘宝</span>
+      <span class="platform-tag">天猫</span>
+      <span class="platform-tag">Amazon</span>
+      <span class="platform-tag">速卖通</span>
+    </div>
+
+    <div class="tip-box">
+      <strong>⚠ 重要：</strong>必须通过本地服务打开系统页面，采集才能自动填表。<br>
+      方法：双击「启动服务.bat」→ 浏览器会自动打开系统页面
+    </div>
+  </div>
+  <div class="links">
+    <button class="btn btn-primary" id="btn-open-system">🚀 打开系统页面（localhost）</button>
+    <button class="btn btn-secondary" id="btn-check-data">🔄 检查最新数据</button>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

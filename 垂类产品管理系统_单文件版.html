@@ -1,0 +1,3252 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>垂类产品管理系统</title>
+<style>
+/* ===== 全局重置 ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --primary: #4361ee;
+  --primary-dark: #3a56d4;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+  --bg: #f0f2f7;
+  --surface: #ffffff;
+  --border: #e5e7eb;
+  --text: #1f2937;
+  --text-secondary: #6b7280;
+  --sidebar-bg: #1e2a45;
+  --sidebar-text: #a8b8d8;
+  --sidebar-active: #4361ee;
+  --sidebar-width: 240px;
+  --topbar-h: 60px;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 2px 8px rgba(0,0,0,.06);
+  --shadow-lg: 0 4px 20px rgba(0,0,0,.12);
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+
+body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }
+
+/* ===== 页面管理 ===== */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ===== 登录页 ===== */
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1e2a45 0%, #2d3f6c 50%, #4361ee 100%);
+  position: relative;
+  overflow: hidden;
+}
+.login-container::before {
+  content: '';
+  position: absolute;
+  width: 600px; height: 600px;
+  background: rgba(255,255,255,.04);
+  border-radius: 50%;
+  top: -200px; right: -200px;
+}
+.login-container::after {
+  content: '';
+  position: absolute;
+  width: 400px; height: 400px;
+  background: rgba(255,255,255,.03);
+  border-radius: 50%;
+  bottom: -100px; left: -100px;
+}
+.login-box {
+  background: #fff;
+  border-radius: 16px;
+  padding: 48px 40px;
+  width: 400px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  position: relative;
+  z-index: 1;
+}
+.login-logo { text-align: center; margin-bottom: 36px; }
+.logo-icon { font-size: 52px; margin-bottom: 12px; }
+.login-logo h1 { font-size: 22px; font-weight: 700; color: #1e2a45; }
+.login-logo p { color: var(--text-secondary); margin-top: 6px; font-size: 13px; }
+.login-tip { text-align: center; color: var(--text-secondary); font-size: 12px; margin-top: 16px; }
+
+/* ===== 应用布局 ===== */
+#app-page {
+  display: none;
+  min-height: 100vh;
+}
+#app-page.active {
+  display: flex;
+  flex-direction: row;
+}
+
+/* ===== 侧边栏 ===== */
+#sidebar {
+  width: var(--sidebar-width);
+  min-height: 100vh;
+  background: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  z-index: 100;
+  transition: transform .3s ease;
+}
+.sidebar-header {
+  padding: 20px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.sidebar-logo { font-size: 28px; }
+.sidebar-title { color: #fff; font-weight: 700; font-size: 15px; }
+.sidebar-nav { flex: 1; padding: 12px 8px; overflow-y: auto; }
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--sidebar-text);
+  transition: all .2s;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+.nav-item:hover { background: rgba(255,255,255,.08); color: #fff; }
+.nav-item.active { background: var(--sidebar-active); color: #fff; }
+.nav-icon { font-size: 17px; width: 22px; text-align: center; }
+.sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.user-info { display: flex; align-items: center; gap: 10px; }
+.user-avatar {
+  width: 36px; height: 36px;
+  background: var(--sidebar-active);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 600; font-size: 15px;
+}
+.user-name { color: #fff; font-size: 13px; font-weight: 600; }
+.user-role { color: var(--sidebar-text); font-size: 11px; }
+.logout-btn {
+  margin-left: auto;
+  background: none; border: none;
+  color: var(--sidebar-text);
+  cursor: pointer; font-size: 18px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color .2s;
+}
+.logout-btn:hover { color: #fff; }
+
+/* ===== 主内容 ===== */
+#main-content {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: margin-left .3s;
+}
+
+/* ===== 顶部栏 ===== */
+.topbar {
+  height: var(--topbar-h);
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: var(--shadow);
+}
+.sidebar-toggle {
+  background: none; border: none; cursor: pointer;
+  font-size: 20px; color: var(--text-secondary);
+  padding: 4px; border-radius: 4px;
+}
+.sidebar-toggle:hover { color: var(--primary); }
+.breadcrumb { color: var(--text-secondary); font-size: 15px; flex: 1; }
+.current-time { color: var(--text-secondary); font-size: 13px; }
+
+/* ===== 内容区 ===== */
+.content-area { flex: 1; padding: 24px; }
+.content-page { display: none; }
+.content-page.active { display: block; }
+
+/* ===== 页面头 ===== */
+.page-header { margin-bottom: 20px; }
+.page-header h2 { font-size: 20px; font-weight: 700; }
+.page-desc { color: var(--text-secondary); margin-top: 4px; font-size: 13px; }
+
+/* ===== 表单 ===== */
+.form-group { margin-bottom: 16px; }
+.form-group label, .form-section-group label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
+.form-group input, .form-group select, .form-group textarea,
+.form-section-group input, .form-section-group select, .form-section-group textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+  background: #fff;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus,
+.form-section-group input:focus, .form-section-group select:focus, .form-section-group textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(67,97,238,.12);
+}
+.form-group textarea { resize: vertical; min-height: 80px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+/* ===== 按钮 ===== */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-success { background: var(--success); color: #fff; }
+.btn-success:hover { background: #059669; }
+.btn-outline { background: #fff; color: var(--text); border: 1px solid var(--border); }
+.btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover { background: #dc2626; }
+.btn-full { width: 100%; justify-content: center; padding: 12px; font-size: 15px; }
+.btn-sm { padding: 6px 12px; font-size: 13px; }
+.btn-xs { padding: 4px 10px; font-size: 12px; border-radius: 4px; }
+
+/* ===== 统计卡片 ===== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+.stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+.stat-value { font-size: 26px; font-weight: 700; color: var(--text); }
+.stat-label { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+.stat-trend { font-size: 11px; position: absolute; top: 14px; right: 14px; padding: 2px 6px; border-radius: 10px; }
+.stat-trend.up { background: #e6f4ea; color: var(--success); }
+
+/* ===== 看板图表 ===== */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.chart-card {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+.chart-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: var(--text); }
+.chart-body { min-height: 180px; }
+
+/* ===== 搜索栏 ===== */
+.search-bar {
+  background: linear-gradient(135deg, #f0f4ff 0%, #f8fafc 100%);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+  border: 1px solid #e0e7ff;
+}
+.search-item { display: flex; flex-direction: column; gap: 4px; min-width: 140px; }
+.search-item label {
+  font-size: 12px;
+  color: var(--primary);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+.search-item input, .search-item select {
+  padding: 7px 10px;
+  border: 1.5px solid #d1d5db;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  outline: none;
+  min-width: 130px;
+  background: #fff;
+  transition: border-color .2s, box-shadow .2s;
+}
+.search-item input:focus, .search-item select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(67,97,238,0.12);
+}
+.search-item input::placeholder { color: #b0b8c8; }
+.search-item select { cursor: pointer; color: #374151; }
+.search-actions { display: flex; gap: 8px; align-items: flex-end; }
+
+/* ===== 操作栏 ===== */
+.action-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.record-count { color: var(--text-secondary); font-size: 13px; margin-left: auto; }
+
+/* ===== 表格 ===== */
+.table-card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.table-title { font-weight: 600; font-size: 15px; }
+.table-wrapper { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+thead tr { background: #f8fafc; }
+th {
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+td {
+  padding: 12px 16px;
+  font-size: 13px;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+tbody tr:hover { background: #fafbff; }
+tbody tr:last-child td { border-bottom: none; }
+
+/* ===== 标签 ===== */
+.tag {
+  display: inline-flex; align-items: center;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.tag-success { background: #e6f4ea; color: #1a7f3c; }
+.tag-warning { background: #fff3e0; color: #e65100; }
+.tag-danger { background: #fce8e6; color: #c62828; }
+.tag-info { background: #e8f0fe; color: #1a56db; }
+.tag-gray { background: #f3f4f6; color: #6b7280; }
+.tag-purple { background: #f3e8fd; color: #7e22ce; }
+
+/* ===== 评级 ===== */
+.rating { display: inline-flex; gap: 1px; }
+.rating .star { color: #fbbf24; }
+.rating .star.empty { color: #e5e7eb; }
+
+/* ===== 分页 ===== */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+}
+.pagination button {
+  min-width: 32px; height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all .2s;
+}
+.pagination button:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+.pagination button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.pagination button:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ===== 抽屉 ===== */
+.drawer-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 200;
+  align-items: stretch;
+  justify-content: flex-end;
+}
+.drawer-overlay.open { display: flex; }
+.drawer {
+  width: 620px;
+  max-width: 100%;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -4px 0 24px rgba(0,0,0,.15);
+  animation: slideIn .3s ease;
+}
+@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+.drawer-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.drawer-header h3 { font-size: 17px; font-weight: 600; }
+.drawer-close {
+  background: none; border: none; cursor: pointer;
+  font-size: 18px; color: var(--text-secondary);
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s;
+}
+.drawer-close:hover { background: #f3f4f6; color: var(--text); }
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+.drawer-footer {
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  background: #fff;
+}
+
+/* 抽屉表单分节 */
+.form-section {
+  margin-bottom: 24px;
+}
+.form-section-title {
+  font-size: 14px; font-weight: 600;
+  color: var(--primary);
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e8f0fe;
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 6px;
+}
+.form-section-group { margin-bottom: 12px; }
+
+/* ===== 弹窗 ===== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 300;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #fff;
+  border-radius: var(--radius);
+  width: 680px;
+  max-width: 95%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+  animation: fadeIn .25s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-header h3 { font-size: 17px; font-weight: 600; }
+.modal-close {
+  background: none; border: none; cursor: pointer;
+  font-size: 18px; color: var(--text-secondary);
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s;
+}
+.modal-close:hover { background: #f3f4f6; }
+.modal-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 24px; border-top: 1px solid var(--border); }
+
+/* 详情视图 */
+.detail-section { margin-bottom: 20px; }
+.detail-section-title { font-size: 14px; font-weight: 600; color: var(--primary); margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid #e8f0fe; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.detail-item { }
+.detail-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 2px; }
+.detail-value { font-size: 14px; color: var(--text); font-weight: 500; }
+
+/* ===== Toast ===== */
+#toast-container { position: fixed; top: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  background: #fff;
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  box-shadow: var(--shadow-lg);
+  display: flex; align-items: center; gap: 10px;
+  min-width: 240px;
+  animation: toastIn .3s ease;
+  border-left: 4px solid transparent;
+  font-size: 14px;
+}
+@keyframes toastIn { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
+.toast.success { border-color: var(--success); }
+.toast.error { border-color: var(--danger); }
+.toast.info { border-color: var(--info); }
+
+/* ===== 复选框组 ===== */
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.checkbox-item {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 13px; cursor: pointer;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 10px;
+  transition: all .2s;
+  user-select: none;
+}
+.checkbox-item:hover { border-color: var(--primary); }
+.checkbox-item input[type="checkbox"] { accent-color: var(--primary); }
+.checkbox-item.checked { background: #e8f0fe; border-color: var(--primary); color: var(--primary); }
+
+/* 资质项带日期 */
+.cert-item {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 8px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+}
+.cert-item label { min-width: 80px; font-weight: 500; font-size: 13px; }
+.cert-item input[type="checkbox"] { accent-color: var(--primary); }
+.cert-item input[type="date"] { border: 1px solid var(--border); border-radius: 4px; padding: 3px 8px; font-size: 12px; }
+.cert-item input[type="file"] { font-size: 12px; }
+
+/* 平台标签 */
+.platform-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.platform-tag {
+  background: #e8f0fe; color: var(--primary);
+  border-radius: 4px; padding: 2px 8px; font-size: 12px;
+}
+
+/* 采集按钮 */
+.collect-row { display: flex; gap: 8px; align-items: center; }
+.collect-row input { flex: 1; }
+
+/* 文件上传 */
+.upload-box {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.upload-box:hover { border-color: var(--primary); color: var(--primary); }
+.upload-box input[type="file"] { display: none; }
+
+/* ===== 操作按钮 ===== */
+.op-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ===== 工具类 ===== */
+.mt-20 { margin-top: 20px; }
+.text-center { text-align: center; }
+.text-gray { color: var(--text-secondary); }
+.bold { font-weight: 600; }
+.empty-state { text-align: center; padding: 40px; color: var(--text-secondary); }
+
+/* ===== 响应式 ===== */
+@media (max-width: 768px) {
+  :root { --sidebar-width: 0px; }
+  #sidebar { transform: translateX(-240px); }
+  #sidebar.open { transform: translateX(0); width: 240px; }
+  #main-content { margin-left: 0; }
+  .form-row, .form-row-3 { grid-template-columns: 1fr; }
+  .drawer { width: 100%; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .search-bar { flex-direction: column; }
+  .search-item { width: 100%; }
+}
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: 1fr; }
+  .content-area { padding: 12px; }
+}
+
+/* ===== 饼图大卡片 ===== */
+.chart-card-lg {
+  grid-column: span 1;
+}
+
+/* ===== 序号白色小框 ===== */
+.row-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #fff;
+  border: 1.5px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+
+/* ===== 复选框美化 ===== */
+input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+  cursor: pointer;
+  border-radius: 3px;
+}
+thead input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+}
+
+/* ===== 选中行高亮 ===== */
+.row-selected {
+  background: #eff6ff !important;
+}
+.row-selected:hover {
+  background: #dbeafe !important;
+}
+
+/* ===== 采购地址链接按钮 ===== */
+.link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 10px;
+  background: #e8f0fe;
+  color: #1a56db;
+  border: 1px solid #b6cef5;
+  border-radius: 4px;
+  font-size: 12px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.link-btn:hover {
+  background: #d2e3fc;
+  border-color: #1a56db;
+}
+
+/* ===== 资质标签 ===== */
+.cert-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+/* ===== 实时动态 ===== */
+.live-feed-card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.live-feed-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.live-dot {
+  width: 8px; height: 8px;
+  background: #10b981;
+  border-radius: 50%;
+  animation: pulse 1.5s ease infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50% { opacity:.4; transform:scale(.7); }
+}
+.live-feed-body {
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 8px 16px;
+}
+.feed-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 13px;
+}
+.feed-item:last-child { border-bottom: none; }
+.feed-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.feed-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.feed-text {
+  flex: 1;
+  color: #374151;
+  line-height: 1.4;
+}
+.feed-text strong { color: #1f2937; }
+.feed-time {
+  font-size: 11px;
+  color: #9ca3af;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ===== 顶栏数据备份按钮 ===== */
+.topbar-data-btns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 12px;
+}
+.btn-topbar {
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .15s;
+}
+.btn-topbar:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: #f0f4ff;
+}
+
+/* ===== 供应商搜索选择器 ===== */
+.supplier-select-wrapper {
+  position: relative;
+  width: 100%;
+}
+.supplier-select-wrapper > input[type="text"] {
+  width: 100%;
+  padding: 9px 32px 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  background: #fff;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.supplier-select-wrapper > input[type="text"]:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(67,97,238,.12);
+}
+.supplier-select-arrow {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 10px;
+  color: var(--text-secondary);
+  user-select: none;
+  padding: 4px;
+}
+.supplier-select-arrow:hover {
+  color: var(--primary);
+}
+.supplier-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  z-index: 999;
+  margin-top: 2px;
+}
+.supplier-dropdown.open {
+  display: block;
+}
+.supplier-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background .15s;
+}
+.supplier-dropdown-item:last-child {
+  border-bottom: none;
+}
+.supplier-dropdown-item:hover {
+  background: #f0f4ff;
+}
+.supplier-dropdown-item.selected {
+  background: #e8f0fe;
+  font-weight: 600;
+}
+.supplier-dropdown-name {
+  color: var(--text);
+  font-weight: 500;
+}
+.supplier-dropdown-meta {
+  color: var(--text-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+  margin-left: 8px;
+}
+.supplier-dropdown-empty {
+  padding: 16px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+</style>
+</head>
+<body>
+<!-- 登录页 -->
+<div id="login-page" class="page active">
+  <div class="login-container">
+    <div class="login-box">
+      <div class="login-logo">
+        <div class="logo-icon">📦</div>
+        <h1>垂类产品管理系统</h1>
+        <p>供应商 · 产品 · 数据一体化管理平台</p>
+      </div>
+      <form id="login-form">
+        <div class="form-group">
+          <label>账号</label>
+          <input type="text" id="login-username" placeholder="请输入账号" value="admin">
+        </div>
+        <div class="form-group">
+          <label>密码</label>
+          <input type="password" id="login-password" placeholder="请输入密码" value="123456">
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">登 录</button>
+      </form>
+      <p class="login-tip">演示账号：admin / 123456</p>
+    </div>
+  </div>
+</div>
+
+<!-- 主应用 -->
+<div id="app-page" class="page">
+  <!-- 侧边栏 -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">📦</div>
+      <div class="sidebar-title">产品管理系统</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" data-page="dashboard">
+        <span class="nav-icon">📊</span>
+        <span class="nav-text">数据看板</span>
+      </div>
+      <div class="nav-item" data-page="supplier">
+        <span class="nav-icon">🏭</span>
+        <span class="nav-text">供应商管理</span>
+      </div>
+      <div class="nav-item" data-page="product">
+        <span class="nav-icon">📦</span>
+        <span class="nav-text">产品管理</span>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar">A</div>
+        <div class="user-detail">
+          <div class="user-name">管理员</div>
+          <div class="user-role">admin</div>
+        </div>
+        <button class="logout-btn" id="logout-btn" title="退出登录">⏻</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 主内容区 -->
+  <main id="main-content">
+    <!-- 顶部栏 -->
+    <header class="topbar">
+      <button id="sidebar-toggle" class="sidebar-toggle">☰</button>
+      <div class="breadcrumb" id="breadcrumb">数据看板</div>
+      <div class="topbar-right">
+        <span class="current-time" id="current-time"></span>
+        <div class="topbar-data-btns">
+          <button class="btn-topbar" onclick="App.exportBackup()" title="导出 JSON 备份文件到本地">💾 备份数据</button>
+          <button class="btn-topbar" onclick="document.getElementById('import-backup-file').click()" title="从 JSON 备份文件还原数据">📂 还原数据</button>
+          <input type="file" id="import-backup-file" accept=".json" style="display:none;" onchange="App.importBackup(this)">
+        </div>
+      </div>
+    </header>
+
+    <!-- 页面内容 -->
+    <div class="content-area">
+      <!-- 数据看板 -->
+      <div id="page-dashboard" class="content-page active">
+        <div class="page-header">
+          <h2>数据看板</h2>
+          <p class="page-desc">供应商与产品总览</p>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#e8f0fe;color:#4285f4">🏭</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-supplier-total">0</div>
+              <div class="stat-label">供应商总数</div>
+            </div>
+            <div class="stat-trend up">↑ 较上月</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#e6f4ea;color:#34a853">✅</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-supplier-active">0</div>
+              <div class="stat-label">合作中供应商</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#fce8e6;color:#ea4335">⏸</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-supplier-paused">0</div>
+              <div class="stat-label">已暂停供应商</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#fff3e0;color:#fb8c00">📦</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-product-total">0</div>
+              <div class="stat-label">产品总数</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#f3e8fd;color:#9c27b0">🛒</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-product-active">0</div>
+              <div class="stat-label">上架中产品</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#e8f5e9;color:#2e7d32">🌍</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-platform-count">12</div>
+              <div class="stat-label">覆盖销售平台</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="chart-card chart-card-lg">
+            <div class="chart-title">产品类目分布（一级类目）</div>
+            <div class="chart-body" id="chart-category"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">资质覆盖情况</div>
+            <div class="chart-body" id="chart-cert-coverage"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">供应商评级分布</div>
+            <div class="chart-body" id="chart-rating"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">供应商省份分布 TOP10</div>
+            <div class="chart-body" id="chart-province"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">产品平台分布</div>
+            <div class="chart-body" id="chart-platform"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">供应商账期分布</div>
+            <div class="chart-body" id="chart-payment"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">产品状态概览</div>
+            <div class="chart-body" id="chart-product-status"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">供应商服务能力分布</div>
+            <div class="chart-body" id="chart-service"></div>
+          </div>
+        </div>
+
+        <div class="live-feed-card mt-20">
+          <div class="live-feed-header">
+            <span class="table-title">📡 实时动态</span>
+            <span class="live-dot"></span>
+          </div>
+          <div id="live-feed-body" class="live-feed-body"></div>
+        </div>
+      </div>
+
+      <!-- 供应商管理 -->
+      <div id="page-supplier" class="content-page">
+        <div class="page-header">
+          <h2>供应商管理</h2>
+        </div>
+        <!-- 搜索栏 -->
+        <div class="search-bar">
+          <div class="search-item">
+            <label>供应商名称</label>
+            <input type="text" id="s-name" placeholder="请输入供应商名称">
+          </div>
+          <div class="search-item">
+            <label>产品种类</label>
+            <select id="s-category">
+              <option value="">全部</option>
+            </select>
+          </div>
+          <div class="search-item">
+            <label>省份</label>
+            <select id="s-province">
+              <option value="">全部</option>
+            </select>
+          </div>
+          <div class="search-item">
+            <label>状态</label>
+            <select id="s-status">
+              <option value="">全部</option>
+              <option value="合作中">合作中</option>
+              <option value="已暂停">已暂停</option>
+            </select>
+          </div>
+          <div class="search-item">
+            <label>账期</label>
+            <select id="s-payment">
+              <option value="">全部</option>
+              <option value="现结">现结</option>
+              <option value="月结">月结</option>
+              <option value="季结">季结</option>
+              <option value="半年结">半年结</option>
+            </select>
+          </div>
+          <div class="search-item">
+            <label>主营业务</label>
+            <input type="text" id="s-business" placeholder="输入主营业务模糊搜索">
+          </div>
+          <div class="search-actions">
+            <button class="btn btn-primary" onclick="Supplier.search()">🔍 搜索</button>
+            <button class="btn btn-outline" onclick="Supplier.resetSearch()">重置</button>
+          </div>
+        </div>
+        <!-- 操作栏 -->
+        <div class="action-bar">
+          <button class="btn btn-success" onclick="Supplier.openAdd()">+ 添加供应商</button>
+          <button class="btn btn-outline" onclick="Supplier.exportCSV()">📥 导出</button>
+          <span class="record-count" id="supplier-count"></span>
+        </div>
+        <!-- 表格 -->
+        <div class="table-card">
+          <div class="table-wrapper">
+            <table id="supplier-table">
+              <thead>
+                <tr>
+                  <th style="width:40px"><input type="checkbox" id="supplier-check-all" onchange="Supplier.toggleAll(this.checked)"></th>
+                  <th style="width:50px">序号</th>
+                  <th>供应商名称</th>
+                  <th>联系人</th>
+                  <th>联系方式</th>
+                  <th>产品种类</th>
+                  <th>主营业务</th>
+                  <th>店铺地址</th>
+                  <th>评级</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="supplier-tbody"></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="supplier-pagination"></div>
+        </div>
+      </div>
+
+      <!-- 产品管理 -->
+      <div id="page-product" class="content-page">
+        <div class="page-header">
+          <h2>产品管理</h2>
+        </div>
+        <!-- 搜索栏 -->
+        <div class="search-bar">
+          <div class="search-item">
+            <label>产品ID</label>
+            <input type="text" id="p-id" placeholder="请输入产品ID">
+          </div>
+          <div class="search-item">
+            <label>产品名称</label>
+            <input type="text" id="p-name" placeholder="请输入产品名称">
+          </div>
+          <div class="search-item">
+            <label>一级类目</label>
+            <select id="p-cat1" onchange="Product.onCat1Change()">
+              <option value="">全部</option>
+            </select>
+          </div>
+          <div class="search-item">
+            <label>供应商</label>
+            <select id="p-supplier">
+              <option value="">全部</option>
+            </select>
+          </div>
+          <div class="search-item">
+            <label>状态</label>
+            <select id="p-status">
+              <option value="">全部</option>
+              <option value="上架中">上架中</option>
+              <option value="已下架">已下架</option>
+            </select>
+          </div>
+          <div class="search-item">
+            <label>销售平台</label>
+            <select id="p-platform">
+              <option value="">全部</option>
+              <option value="Amazon">Amazon</option>
+              <option value="Shopee">Shopee</option>
+              <option value="Temu">Temu</option>
+              <option value="LAZADA">LAZADA</option>
+              <option value="TikTok Shop">TikTok Shop</option>
+              <option value="eBay">eBay</option>
+              <option value="AliExpress">AliExpress</option>
+              <option value="Coupang">Coupang</option>
+              <option value="Naver">Naver</option>
+              <option value="Gmarket">Gmarket</option>
+              <option value="Mercado">Mercado</option>
+              <option value="Ozon">Ozon</option>
+            </select>
+          </div>
+          <div class="search-item">
+            <label>资质认证</label>
+            <select id="p-cert">
+              <option value="">全部</option>
+              <option value="CE">CE</option>
+              <option value="UKCA">UKCA</option>
+              <option value="FCC">FCC</option>
+              <option value="UL">UL</option>
+              <option value="PSE">PSE</option>
+              <option value="SAA">SAA</option>
+              <option value="KC">KC</option>
+              <option value="RoHS">RoHS</option>
+              <option value="CPC">CPC</option>
+              <option value="ST">ST</option>
+              <option value="PAL">PAL</option>
+              <option value="MSDS">MSDS</option>
+              <option value="SGS">SGS</option>
+              <option value="其他资质">其他资质</option>
+            </select>
+          </div>
+          <div class="search-actions">
+            <button class="btn btn-primary" onclick="Product.search()">🔍 搜索</button>
+            <button class="btn btn-outline" onclick="Product.resetSearch()">重置</button>
+          </div>
+        </div>
+        <!-- 操作栏 -->
+        <div class="action-bar">
+          <button class="btn btn-success" onclick="Product.openAdd()">+ 添加产品</button>
+          <button class="btn btn-outline" onclick="Product.exportCSV()">📥 导出</button>
+          <span class="record-count" id="product-count"></span>
+        </div>
+        <!-- 表格 -->
+        <div class="table-card">
+          <div class="table-wrapper">
+            <table id="product-table">
+              <thead>
+                <tr>
+                  <th style="width:40px"><input type="checkbox" id="product-check-all" onchange="Product.toggleAll(this.checked)"></th>
+                  <th style="width:50px">序号</th>
+                  <th>产品ID</th>
+                  <th>产品名称</th>
+                  <th>类目</th>
+                  <th>资质</th>
+                  <th>销售平台</th>
+                  <th>供应商</th>
+                  <th>采购地址</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="product-tbody"></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="product-pagination"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- 供应商抽屉 -->
+<div id="supplier-drawer" class="drawer-overlay">
+  <div class="drawer">
+    <div class="drawer-header">
+      <h3 id="supplier-drawer-title">添加供应商</h3>
+      <button class="drawer-close" onclick="Supplier.closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body" id="supplier-drawer-body">
+      <!-- 动态生成表单 -->
+    </div>
+    <div class="drawer-footer">
+      <button class="btn btn-outline" onclick="Supplier.closeDrawer()">取消</button>
+      <button class="btn btn-primary" onclick="Supplier.saveForm()">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 产品抽屉 -->
+<div id="product-drawer" class="drawer-overlay">
+  <div class="drawer">
+    <div class="drawer-header">
+      <h3 id="product-drawer-title">添加产品</h3>
+      <button class="drawer-close" onclick="Product.closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body" id="product-drawer-body">
+    </div>
+    <div class="drawer-footer">
+      <button class="btn btn-outline" onclick="Product.closeDrawer()">取消</button>
+      <button class="btn btn-primary" onclick="Product.saveForm()">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 查看详情弹窗 -->
+<div id="view-modal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="view-modal-title">详情</h3>
+      <button class="modal-close" onclick="App.closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="view-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="App.closeModal()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast通知 -->
+<div id="toast-container"></div>
+
+<script>
+// ============================================================
+// 类目数据（来源：一、二、三级类目明细表.xlsx）
+// ============================================================
+const CATEGORY_DATA = {
+  "医药保健": {
+    "保健器械": ["保健器械其他","血糖仪","理疗仪（保健）","体温计","血压计"],
+    "药品": ["涂抹类","药贴类","浸泡药类","喷剂类"],
+    "保健食品": ["食品","胶囊/片剂","茶类"],
+    "护理护具": ["身体护理/护具","耳鼻喉护理","眼部保健"],
+    "按摩保健": ["经络保健器材","保健器具配件"],
+    "成人保健": ["成人用具","成人护理"]
+  },
+  "服饰": {
+    "内衣": ["文胸","塑身衣","吊带/背心","内裤","内衣套装","泳衣","保暖内衣","家居服","秋衣秋裤"],
+    "下装": ["休闲裤","工装裤","牛仔裤","西裤","打底裤","运动裤","皮裤","阔腿裤","短裤"],
+    "上衣": ["羽绒服","卫衣","夹克","毛呢外套","西装","T恤","冲锋衣","衬衫","皮衣","上衣其他","毛衣/针织衫","风衣","皮草","马甲","POLO","防晒衣","雪纺衫","雨衣"],
+    "配饰": ["手套","帽子","围巾/披肩","袜子","鞋垫","腰带","袖套","口罩","领带"],
+    "母婴服饰": ["哺乳内衣","孕妇装","童装","孕妇内裤"],
+    "套装": ["休闲套装","商务套装","运动套装"],
+    "裙子": ["连衣裙","半身裙"]
+  },
+  "电子电器": {
+    "手机外设": ["手机外设其它","充电宝","手机支架","充电器","手机镜头","自拍设备","手机壳/套"],
+    "电脑外设": ["电脑配件","电脑支架","硬盘","键盘","U盘","手柄","鼠标"],
+    "影音娱乐": ["摄影摄像","投影仪","游戏机","音响","耳机","TV盒","麦克风","录音笔","手机","通讯对讲","收音机","翻译机"],
+    "家用电器": ["生活电器","厨房小电","电扇","机械设备","室外照明","室内照明","五金电器","电子元器件"],
+    "个护电器": ["个护电器其他","直/卷发器","美体仪器","吹风机","理发剃须器","美容护肤仪","口腔清洁仪器","美发生发仪"],
+    "智能设备": ["其他智能设备","智能手环","智能手表"]
+  },
+  "母婴玩具": {
+    "玩具": ["儿童玩具","遥控电动","动漫模型（手办/模型）","布艺玩偶","乐器","学习文具","积木拼绘","健身玩具（跳舞毯/爬行垫）"],
+    "母婴用品": ["母婴睡袋/婴儿枕/孕妇枕/婴儿毯","婴儿车/床/坐椅","母婴用品其他","婴儿背带","哺育喂养用品","母婴洗护用品"]
+  },
+  "鞋类": {
+    "休闲运动鞋": ["户外鞋","休闲鞋","运动鞋","帆布鞋","摇摇鞋","舞蹈鞋"],
+    "凉/拖鞋": ["凉鞋","拖鞋","雨鞋"],
+    "皮鞋": ["休闲皮鞋","商务皮鞋","豆豆鞋"],
+    "靴子": ["短靴","长靴","雪地靴"]
+  },
+  "包类": {
+    "行李箱包": ["拉杆包","拉杆箱","行李包","购物袋"],
+    "钱包": ["卡包/钥匙包","手拿包","短款钱包","长款钱包"],
+    "单肩包": ["女士单肩包","男士单肩包","胸包","腰包","子母包","化妆包","手提包","斜跨包"],
+    "双肩包": ["休闲双肩包","妈咪包","登山背包","商务电脑包"]
+  },
+  "居家百货": {
+    "园艺": ["园艺工具"],
+    "汽车用品": ["车载电器","汽车配件(支架/号码牌/车衣挡板/其他)","汽车装饰","汽车美容/清洁","车用收纳","汽车工具配件（车衣/挡板/）"],
+    "厨房用品": ["水具酒具壶","厨房收纳类","烹饪锅具","烘焙/烧烤用品","厨房用品其他","餐具","刀具/菜板","开瓶/削皮","网漏/油格/冰格","食物罩"],
+    "办公/文化": ["办公用品","气氛/布置用品","工艺摆件","办公收纳","习俗用品","美术/书法/书籍"],
+    "宠物用品": ["宠物用品其他","宠物窝垫/包","宠物服饰","宠物玩具","宠物清洁","宠物食品"],
+    "布艺家纺": ["床垫","餐桌布艺/桌布/椅套","枕头/巾","被子","沙发/套/垫","家用防尘罩","靠垫/抱枕/抱枕被","地毯/毛毯","蚊帐","布艺家纺其他","窗帘","凉席","四件套","坐垫/椅垫/美臀垫"],
+    "园艺类": ["其他园艺工具","园艺工具","园艺装饰摆件","植物标签/插签","化肥营养液"],
+    "日用百货": ["日常收纳","五金工具","日用百货其他","装饰摆件","清洁工具","挡风/遮阳/防雨工具","安全/防护","驱虫防蚊灭鼠","清洁用品","打火机及烟具","包装辅助","眼镜/(配件)","针线/别针/缝纫","室内照明"],
+    "家装建材": ["家具","厨卫五金","功能材料","门窗五金","墙贴/玻璃贴"],
+    "户外运动": ["户外装备","健身器材","骑行用品","体育用品","钓鱼用具","自行车配件"]
+  },
+  "钟表珠宝": {
+    "手表": ["石英表","电子表","机械表","表配件"],
+    "饰品": ["手饰","饰品其他","发饰/头饰","衣饰","项饰","耳饰","木手串把件","玉石","银饰","钛钢"],
+    "钟表": ["闹钟","挂钟"]
+  },
+  "美容个护": {
+    "个人洗护": ["口腔洗护","假发","身体清洁","头发洗护","个护工具","面部清洁"],
+    "护肤": ["面部护理","眼部护理","身体护理","唇部护理"],
+    "彩妆": ["香水","化妆工具","眼妆","美甲/美甲工具","底妆","假睫毛","唇妆"]
+  }
+};
+
+const PROVINCES = ["北京","天津","上海","重庆","河北","山西","内蒙古","辽宁","吉林","黑龙江","江苏","浙江","安徽","福建","江西","山东","河南","湖北","湖南","广东","广西","海南","四川","贵州","云南","西藏","陕西","甘肃","青海","宁夏","新疆","香港","澳门"];
+const PLATFORMS = ["Amazon","Shopee","Temu","LAZADA","TikTok Shop","eBay","AliExpress","Coupang","Naver","Gmarket","Mercado","Ozon"];
+const CERTS = ["CE","UKCA","FCC","UL","PSE","SAA","KC","RoHS","CPC","ST","PAL","MSDS","SGS","其他资质"];
+const PAYMENT_TERMS = ["现结","月结","季结","半年结","年结","预付款"];
+const RATINGS = ["S级","A级","B级","C级","D级"];
+
+// ============================================================
+// 默认演示数据（仅首次加载时使用）
+// ============================================================
+const DEFAULT_SUPPLIERS = [
+  {id:1, name:"深圳科技供应链有限公司", contact:"张伟", phone:"13800138001", province:"广东", city:"深圳", category:"电子电器", business:"蓝牙耳机、充电宝、手机配件", service:"OEM代工,贴牌生产", rating:"A级", status:"合作中", payment:"月结", shopUrl:"https://1688.com/shop1", orderUrl:"https://1688.com/order1", address:"广东省深圳市宝安区xx路xx号", founded:"2015-03-01", employees:"200-500人", annual:"5000万以上", remark:"主营电子产品，质量稳定"},
+  {id:2, name:"广州服装贸易有限公司", contact:"李娜", phone:"13800138002", province:"广东", city:"广州", category:"服饰", business:"羽绒服、夹克、卫衣", service:"原创设计,品质把控", rating:"S级", status:"合作中", payment:"季结", shopUrl:"", orderUrl:"", address:"广东省广州市白云区xx路", founded:"2012-06-15", employees:"100-200人", annual:"3000万-5000万", remark:""},
+  {id:3, name:"浙江日用品制造厂", contact:"王芳", phone:"13800138003", province:"浙江", city:"义乌", category:"居家百货", business:"保温杯、厨房收纳、日用百货", service:"大货供应", rating:"B级", status:"合作中", payment:"月结", shopUrl:"", orderUrl:"", address:"浙江省义乌市国际商贸城", founded:"2018-01-20", employees:"50-100人", annual:"1000万-3000万", remark:"小商品种类齐全"},
+  {id:4, name:"福建鞋业集团有限公司", contact:"陈明", phone:"13800138004", province:"福建", city:"晋江", category:"鞋类", business:"运动鞋、休闲皮鞋、凉鞋", service:"原创设计,OEM代工", rating:"A级", status:"合作中", payment:"月结", shopUrl:"", orderUrl:"", address:"福建省晋江市陈埭镇", founded:"2010-05-12", employees:"500-1000人", annual:"5000万以上", remark:""},
+  {id:5, name:"上海美容用品贸易公司", contact:"刘梅", phone:"13800138005", province:"上海", city:"上海", category:"美容个护", business:"护肤套装、美甲工具、彩妆", service:"品质把控,快速发货", rating:"B级", status:"已暂停", payment:"现结", shopUrl:"", orderUrl:"", address:"上海市浦东新区xx路", founded:"2019-08-30", employees:"20-50人", annual:"500万-1000万", remark:"暂停合作，等待审核"},
+  {id:6, name:"河北母婴产品公司", contact:"赵强", phone:"13800138006", province:"河北", city:"石家庄", category:"母婴玩具", business:"婴儿车、童装、哺乳用品", service:"大货供应,OEM代工", rating:"C级", status:"合作中", payment:"半年结", shopUrl:"", orderUrl:"", address:"河北省石家庄市桥西区", founded:"2017-03-10", employees:"50-100人", annual:"1000万-3000万", remark:""},
+  {id:7, name:"广东钟表配件有限公司", contact:"孙丽", phone:"13800138007", province:"广东", city:"深圳", category:"钟表珠宝", business:"智能手表、石英表、饰品", service:"原创设计,品质把控", rating:"A级", status:"合作中", payment:"月结", shopUrl:"", orderUrl:"", address:"广东省深圳市龙华区", founded:"2014-11-20", employees:"100-200人", annual:"3000万-5000万", remark:""},
+  {id:8, name:"江苏医疗器械公司", contact:"周涛", phone:"13800138008", province:"江苏", city:"苏州", category:"医药保健", business:"血压计、理疗仪、保健食品", service:"品质把控,原创设计", rating:"S级", status:"合作中", payment:"月结", shopUrl:"", orderUrl:"", address:"江苏省苏州市工业园区", founded:"2008-07-01", employees:"1000人以上", annual:"5000万以上", remark:"合规资质完整"}
+];
+const DEFAULT_PRODUCTS = [
+  {id:"P00001", name:"蓝牙无线耳机TWS", cat1:"电子电器", cat2:"影音娱乐", cat3:"耳机", supplierId:1, supplierName:"深圳科技供应链有限公司", platforms:["Amazon","Temu","AliExpress"], certs:{CE:{checked:true,date:"2024-01-15",files:[],fileData:[]}, FCC:{checked:true,date:"2024-01-15",files:[],fileData:[]}, RoHS:{checked:true,date:"2024-01-15",files:[],fileData:[]}}, status:"上架中", orderUrl:"https://1688.com/order/p00001", remark:"畅销款"},
+  {id:"P00002", name:"男士运动夹克", cat1:"服饰", cat2:"上衣", cat3:"夹克", supplierId:2, supplierName:"广州服装贸易有限公司", platforms:["Amazon","Shopee","LAZADA"], certs:{}, status:"上架中", orderUrl:"https://1688.com/order/p00002", remark:""},
+  {id:"P00003", name:"不锈钢保温杯", cat1:"居家百货", cat2:"厨房用品", cat3:"水具酒具壶", supplierId:3, supplierName:"浙江日用品制造厂", platforms:["Amazon","Temu","Ozon"], certs:{}, status:"上架中", orderUrl:"", remark:""},
+  {id:"P00004", name:"女士休闲皮鞋", cat1:"鞋类", cat2:"皮鞋", cat3:"休闲皮鞋", supplierId:4, supplierName:"福建鞋业集团有限公司", platforms:["Amazon","eBay"], certs:{}, status:"已下架", orderUrl:"https://1688.com/order/p00004", remark:""},
+  {id:"P00005", name:"婴儿电动摇椅", cat1:"母婴玩具", cat2:"母婴用品", cat3:"婴儿车/床/坐椅", supplierId:6, supplierName:"河北母婴产品公司", platforms:["Amazon","Shopee"], certs:{CE:{checked:true,date:"2023-06-01",files:[],fileData:[]},CPC:{checked:true,date:"2023-06-01",files:[],fileData:[]}}, status:"上架中", orderUrl:"", remark:""},
+  {id:"P00006", name:"智能手表运动款", cat1:"电子电器", cat2:"智能设备", cat3:"智能手表", supplierId:7, supplierName:"广东钟表配件有限公司", platforms:["Amazon","Temu","AliExpress","Coupang"], certs:{CE:{checked:true,date:"2024-03-01",files:[],fileData:[]},FCC:{checked:true,date:"2024-03-01",files:[],fileData:[]},RoHS:{checked:true,date:"2024-03-01",files:[],fileData:[]}}, status:"上架中", orderUrl:"https://1688.com/order/p00006", remark:""}
+];
+
+// ============================================================
+// 数据库（localStorage 持久化）
+// 策略：主数据（供应商/产品基础信息）存 pmSystem_db_v1
+//       资质文件 base64 单独存 pmSystem_files_v1（避免超配额时主数据无法保存）
+// ============================================================
+const DB_KEY       = 'pmSystem_db_v1';
+const DB_FILES_KEY = 'pmSystem_files_v1';
+
+// ---------- 文件存储层 ----------
+const FileStore = {
+  // 读取所有文件数据: { "productId::certName": [{name, dataUrl}, ...] }
+  _cache: null,
+
+  _load() {
+    if (this._cache) return this._cache;
+    try {
+      const raw = localStorage.getItem(DB_FILES_KEY);
+      this._cache = raw ? JSON.parse(raw) : {};
+    } catch(e) {
+      this._cache = {};
+    }
+    return this._cache;
+  },
+
+  get(productId, certName) {
+    return (this._load()[`${productId}::${certName}`] || []);
+  },
+
+  set(productId, certName, fileArr) {
+    const store = this._load();
+    if (!fileArr || fileArr.length === 0) {
+      delete store[`${productId}::${certName}`];
+    } else {
+      store[`${productId}::${certName}`] = fileArr;
+    }
+    this._flush();
+  },
+
+  // 删除某产品的所有文件
+  deleteProduct(productId) {
+    const store = this._load();
+    const prefix = `${productId}::`;
+    Object.keys(store).forEach(k => { if (k.startsWith(prefix)) delete store[k]; });
+    this._flush();
+  },
+
+  _flush() {
+    try {
+      localStorage.setItem(DB_FILES_KEY, JSON.stringify(this._cache));
+    } catch(e) {
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        console.warn('[FileStore] localStorage 空间不足，文件数据可能未完整保存。建议定期使用"导出备份"功能。');
+        toast('⚠️ 存储空间不足，文件可能未完整保存，建议导出备份！', 'error');
+      }
+    }
+  },
+
+  // 把旧式内嵌在 products[].certs[].fileData 里的 base64 迁移到独立存储
+  migrateFromProducts(products) {
+    let migrated = 0;
+    products.forEach(p => {
+      Object.entries(p.certs || {}).forEach(([certName, cv]) => {
+        if (cv && cv.fileData && cv.fileData.length > 0) {
+          // 只要有任何一条有 dataUrl，就迁移
+          const hasData = cv.fileData.some(f => f.dataUrl && f.dataUrl.length > 0);
+          if (hasData) {
+            const existing = this.get(p.id, certName);
+            // 合并：以 FileStore 为主，再补充 products 里有但 FileStore 没有的
+            const merged = [...existing];
+            cv.fileData.forEach(f => {
+              if (f.dataUrl && !merged.find(e => e.name === f.name)) {
+                merged.push({name: f.name, dataUrl: f.dataUrl});
+              }
+            });
+            this.set(p.id, certName, merged);
+            migrated++;
+          }
+        }
+      });
+    });
+    if (migrated > 0) {
+      console.log(`[FileStore] 迁移了 ${migrated} 条旧资质文件数据到独立存储`);
+    }
+  }
+};
+
+function _loadDB() {
+  try {
+    const raw = localStorage.getItem(DB_KEY);
+    if (raw) {
+      const saved = JSON.parse(raw);
+      const products = saved.products || [];
+      // 迁移旧数据：把内嵌 fileData 迁移到 FileStore
+      FileStore.migrateFromProducts(products);
+      // 给每个产品的 certs 注入来自 FileStore 的文件数据
+      products.forEach(p => {
+        Object.entries(p.certs || {}).forEach(([certName, cv]) => {
+          if (cv && cv.checked) {
+            cv.fileData = FileStore.get(p.id, certName);
+          }
+        });
+      });
+      return {
+        suppliers: saved.suppliers || [],
+        products,
+        nextSupplierId: saved.nextSupplierId || 9,
+        nextProductId:  saved.nextProductId  || 7
+      };
+    }
+  } catch(e) {
+    console.warn('读取本地数据失败，使用演示数据', e);
+  }
+  // 首次打开：写入演示数据
+  const initial = {
+    suppliers: DEFAULT_SUPPLIERS,
+    products:  DEFAULT_PRODUCTS,
+    nextSupplierId: 9,
+    nextProductId:  7
+  };
+  try { localStorage.setItem(DB_KEY, JSON.stringify(initial)); } catch(e) {}
+  return initial;
+}
+
+const _dbData = _loadDB();
+
+const DB = {
+  suppliers:      _dbData.suppliers,
+  products:       _dbData.products,
+  nextSupplierId: _dbData.nextSupplierId,
+  nextProductId:  _dbData.nextProductId,
+
+  // 保存主数据到 localStorage（不含 fileData base64，fileData 由 FileStore 单独管）
+  save() {
+    try {
+      // 序列化时去掉 fileData（只保留 files 文件名列表，供显示用）
+      const productsSlim = this.products.map(p => {
+        const certs = {};
+        Object.entries(p.certs || {}).forEach(([k, v]) => {
+          certs[k] = {
+            checked:  v.checked,
+            date:     v.date || '',
+            files:    (v.fileData || []).map(f => f.name),
+            // fileData 不存入主记录，由 FileStore 单独管理
+          };
+        });
+        return {...p, certs};
+      });
+
+      localStorage.setItem(DB_KEY, JSON.stringify({
+        suppliers:      this.suppliers,
+        products:       productsSlim,
+        nextSupplierId: this.nextSupplierId,
+        nextProductId:  this.nextProductId
+      }));
+      return true;
+    } catch(e) {
+      console.error('保存主数据失败', e);
+      return false;
+    }
+  },
+
+  // 保存某产品的资质文件到 FileStore（在 saveForm 里调用）
+  saveCertFiles(productId, certs) {
+    Object.entries(certs).forEach(([certName, cv]) => {
+      if (cv && cv.checked) {
+        FileStore.set(productId, certName, cv.fileData || []);
+      } else {
+        FileStore.set(productId, certName, []);
+      }
+    });
+  },
+
+  // 导出 JSON 备份文件（含完整 fileData，确保可完整恢复）
+  exportBackup() {
+    // 重新注入 fileData 以完整导出
+    const productsWithFiles = this.products.map(p => {
+      const certs = {};
+      Object.entries(p.certs || {}).forEach(([k, v]) => {
+        certs[k] = {
+          ...v,
+          fileData: FileStore.get(p.id, k)
+        };
+      });
+      return {...p, certs};
+    });
+    const json = JSON.stringify({
+      _version: 2,
+      _exportTime: new Date().toISOString(),
+      suppliers:      this.suppliers,
+      products:       productsWithFiles,
+      nextSupplierId: this.nextSupplierId,
+      nextProductId:  this.nextProductId
+    }, null, 2);
+    const blob = new Blob([json], {type:'application/json;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const d = new Date();
+    const dateStr = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+    a.href = url; a.download = `产品台账备份_${dateStr}.json`; a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  // 从 JSON 备份文件还原
+  importBackup(jsonStr) {
+    try {
+      const data = JSON.parse(jsonStr);
+      if (!Array.isArray(data.suppliers) || !Array.isArray(data.products)) {
+        return { ok: false, msg: '文件格式不正确，缺少 suppliers 或 products 字段' };
+      }
+      this.suppliers      = data.suppliers;
+      this.products       = data.products;
+      this.nextSupplierId = data.nextSupplierId || (Math.max(0, ...data.suppliers.map(s=>s.id)) + 1);
+      this.nextProductId  = data.nextProductId  || (data.products.length + 1);
+      // 将备份中的 fileData 写入 FileStore
+      FileStore._cache = {};
+      this.products.forEach(p => {
+        Object.entries(p.certs || {}).forEach(([certName, cv]) => {
+          if (cv && cv.fileData && cv.fileData.length > 0) {
+            FileStore.set(p.id, certName, cv.fileData);
+          }
+        });
+      });
+      this.save();
+      return { ok: true, msg: `已还原 ${data.suppliers.length} 个供应商、${data.products.length} 个产品` };
+    } catch(e) {
+      return { ok: false, msg: '解析失败：' + e.message };
+    }
+  },
+
+  // 清空所有数据（危险操作）
+  clear() {
+    localStorage.removeItem(DB_KEY);
+    localStorage.removeItem(DB_FILES_KEY);
+    FileStore._cache = null;
+  }
+};
+
+// 资质颜色映射
+const CERT_COLORS = {
+  "CE":     {bg:"#e8f0fe",color:"#1a56db",border:"#1a56db"},
+  "UKCA":   {bg:"#fff3e0",color:"#e65100",border:"#e65100"},
+  "FCC":    {bg:"#fce8e6",color:"#c62828",border:"#c62828"},
+  "UL":     {bg:"#f3e8fd",color:"#7e22ce",border:"#7e22ce"},
+  "PSE":    {bg:"#e6f4ea",color:"#1a7f3c",border:"#1a7f3c"},
+  "SAA":    {bg:"#fff8e1",color:"#f9a825",border:"#f9a825"},
+  "KC":     {bg:"#e3f2fd",color:"#1565c0",border:"#1565c0"},
+  "RoHS":   {bg:"#fce4ec",color:"#ad1457",border:"#ad1457"},
+  "CPC":    {bg:"#e0f2f1",color:"#00695c",border:"#00695c"},
+  "ST":     {bg:"#f1f8e9",color:"#558b2f",border:"#558b2f"},
+  "PAL":    {bg:"#ede7f6",color:"#4527a0",border:"#4527a0"},
+  "MSDS":   {bg:"#e0f7fa",color:"#00838f",border:"#00838f"},
+  "SGS":    {bg:"#fbe9e7",color:"#bf360c",border:"#bf360c"},
+  "其他资质":{bg:"#eceff1",color:"#546e7a",border:"#546e7a"}
+};
+
+// 平台颜色映射
+const PLATFORM_COLORS = {
+  "Amazon":     {bg:"#fff3e0",color:"#ff9900",border:"#ff9900"},
+  "Shopee":     {bg:"#f4433620",color:"#ee4d2d",border:"#ee4d2d"},
+  "Temu":       {bg:"#fce4ec",color:"#fb6f92",border:"#fb6f92"},
+  "LAZADA":     {bg:"#e8f0fe",color:"#0f146d",border:"#0f146d"},
+  "TikTok Shop":{bg:"#f3e8fd",color:"#000000",border:"#000000"},
+  "eBay":       {bg:"#fff8e1",color:"#e53238",border:"#e53238"},
+  "AliExpress": {bg:"#fff3e0",color:"#ff4747",border:"#ff4747"},
+  "Coupang":    {bg:"#e6f4ea",color:"#e4002b",border:"#e4002b"},
+  "Naver":      {bg:"#e8f5e9",color:"#03c75a",border:"#03c75a"},
+  "Gmarket":    {bg:"#e3f2fd",color:"#00aa64",border:"#00aa64"},
+  "Mercado":    {bg:"#fff9e6",color:"#ffe600",border:"#ffe600"},
+  "Ozon":       {bg:"#e8f0fe",color:"#005bff",border:"#005bff"}
+};
+
+// 生成产品ID
+function genProductId(n) {
+  return 'P' + String(n).padStart(5, '0');
+}
+
+</script>
+<script>
+// ============================================================
+// 工具函数
+// ============================================================
+function toast(msg, type = 'success') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  const icons = {success:'✅', error:'❌', info:'ℹ️'};
+  el.innerHTML = `<span>${icons[type]||''}</span><span>${msg}</span>`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+function stars(rating) {
+  const map = {'S级':5,'A级':4,'B级':3,'C级':2,'D级':1};
+  const n = map[rating] || 0;
+  return Array.from({length:5}, (_,i) => `<span class="star${i<n?'':' empty'}">★</span>`).join('');
+}
+
+function statusTag(s) {
+  if (s === '合作中') return `<span class="tag tag-success">${s}</span>`;
+  if (s === '已暂停') return `<span class="tag tag-danger">${s}</span>`;
+  if (s === '上架中') return `<span class="tag tag-info">${s}</span>`;
+  if (s === '已下架') return `<span class="tag tag-gray">${s}</span>`;
+  return s;
+}
+
+function platformTags(arr) {
+  if (!arr || !arr.length) return '';
+  return arr.map(p => {
+    const c = PLATFORM_COLORS[p] || {bg:'#f3f4f6',color:'#6b7280',border:'#d1d5db'};
+    return `<span class="platform-tag" style="background:${c.bg};color:${c.color};border:1px solid ${c.border}">${p}</span>`;
+  }).join('');
+}
+
+function certTag(name, productId) {
+  const c = CERT_COLORS[name] || CERT_COLORS["其他资质"];
+  if (productId) {
+    const p = DB.products.find(x => x.id === productId);
+    const fileData = p && p.certs && p.certs[name] ? (p.certs[name].fileData || []) : [];
+    const hasFiles = fileData.length > 0;
+    const badge = hasFiles ? `<sup style="background:${c.color};color:#fff;border-radius:8px;padding:0 4px;font-size:10px;font-weight:700;margin-left:2px;">${fileData.length}</sup>` : '';
+    const clickStyle = hasFiles ? `cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.15);` : `cursor:default;`;
+    const onclick = hasFiles ? `onclick="Product.showCertFiles('${productId}','${name}',event)"` : '';
+    return `<span class="cert-tag" style="background:${c.bg};color:${c.color};border:1px solid ${c.border};${clickStyle}" title="${hasFiles?`查看 ${name} 资质文件（${fileData.length} 个）`:name}" ${onclick}>${name}${badge}</span>`;
+  }
+  return `<span class="cert-tag" style="background:${c.bg};color:${c.color};border:1px solid ${c.border}">${name}</span>`;
+}
+
+// ============================================================
+// 主应用控制
+// ============================================================
+const App = {
+  currentPage: 'dashboard',
+
+  init() {
+    document.getElementById('login-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const u = document.getElementById('login-username').value;
+      const p = document.getElementById('login-password').value;
+      if (u === 'admin' && p === '123456') {
+        document.getElementById('login-page').classList.remove('active');
+        document.getElementById('app-page').classList.add('active');
+        App.showPage('dashboard');
+        App.startClock();
+      } else {
+        toast('账号或密码错误', 'error');
+      }
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      document.getElementById('app-page').classList.remove('active');
+      document.getElementById('login-page').classList.add('active');
+    });
+
+    document.querySelectorAll('.nav-item').forEach(el => {
+      el.addEventListener('click', () => App.showPage(el.dataset.page));
+    });
+
+    document.getElementById('sidebar-toggle').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.toggle('open');
+    });
+
+    // 初始化下拉选项
+    App.initCategorySelects();
+    App.initProvinceSelects();
+    App.initProductSupplierSelect();
+
+    // 关闭遮罩点击
+    document.getElementById('supplier-drawer').addEventListener('click', e => {
+      if (e.target === document.getElementById('supplier-drawer')) Supplier.closeDrawer();
+    });
+    document.getElementById('product-drawer').addEventListener('click', e => {
+      if (e.target === document.getElementById('product-drawer')) Product.closeDrawer();
+    });
+    document.getElementById('view-modal').addEventListener('click', e => {
+      if (e.target === document.getElementById('view-modal')) App.closeModal();
+    });
+
+    // 点击外部关闭供应商搜索下拉
+    document.addEventListener('click', e => {
+      const wrapper = document.getElementById('pf-supplier-wrapper');
+      if (wrapper && !wrapper.contains(e.target)) {
+        Product.hideSupplierDropdown();
+      }
+    });
+  },
+
+  showPage(page) {
+    this.currentPage = page;
+    document.querySelectorAll('.content-page').forEach(p => p.classList.remove('active'));
+    document.getElementById(`page-${page}`).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.page === page);
+    });
+    const labels = {dashboard:'数据看板', supplier:'供应商管理', product:'产品管理'};
+    document.getElementById('breadcrumb').textContent = labels[page] || page;
+    if (page === 'dashboard') Dashboard.render();
+    if (page === 'supplier') Supplier.render();
+    if (page === 'product') Product.render();
+  },
+
+  closeModal() {
+    document.getElementById('view-modal').classList.remove('open');
+  },
+
+  openModal(title, html) {
+    document.getElementById('view-modal-title').textContent = title;
+    document.getElementById('view-modal-body').innerHTML = html;
+    document.getElementById('view-modal').classList.add('open');
+  },
+
+  startClock() {
+    const update = () => {
+      const now = new Date();
+      document.getElementById('current-time').textContent =
+        now.toLocaleDateString('zh-CN') + ' ' + now.toLocaleTimeString('zh-CN');
+    };
+    update();
+    setInterval(update, 1000);
+  },
+
+  exportBackup() {
+    DB.exportBackup();
+    toast('备份文件已下载到本地', 'success');
+  },
+
+  importBackup(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = DB.importBackup(e.target.result);
+      if (result.ok) {
+        toast(result.msg + '，页面将刷新', 'success');
+        input.value = '';
+        // 重载页面数据
+        setTimeout(() => location.reload(), 1500);
+      } else {
+        toast('还原失败：' + result.msg, 'error');
+        input.value = '';
+      }
+    };
+    reader.readAsText(file, 'utf-8');
+  },
+
+  initCategorySelects() {
+    // 供应商搜索 - 产品种类
+    const sel = document.getElementById('s-category');
+    Object.keys(CATEGORY_DATA).forEach(k => {
+      const o = document.createElement('option');
+      o.value = k; o.textContent = k;
+      sel.appendChild(o);
+    });
+    // 产品搜索 - 一级类目
+    const pcat = document.getElementById('p-cat1');
+    Object.keys(CATEGORY_DATA).forEach(k => {
+      const o = document.createElement('option');
+      o.value = k; o.textContent = k;
+      pcat.appendChild(o);
+    });
+  },
+
+  initProvinceSelects() {
+    const sel = document.getElementById('s-province');
+    PROVINCES.forEach(p => {
+      const o = document.createElement('option');
+      o.value = p; o.textContent = p;
+      sel.appendChild(o);
+    });
+  },
+
+  initProductSupplierSelect() {
+    const sel = document.getElementById('p-supplier');
+    DB.suppliers.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s.id; o.textContent = s.name;
+      sel.appendChild(o);
+    });
+  }
+};
+
+// ============================================================
+// 数据看板
+// ============================================================
+const Dashboard = {
+  render() {
+    const total = DB.suppliers.length;
+    const active = DB.suppliers.filter(s => s.status === '合作中').length;
+    const paused = DB.suppliers.filter(s => s.status === '已暂停').length;
+    const ptotal = DB.products.length;
+    const pactive = DB.products.filter(p => p.status === '上架中').length;
+
+    document.getElementById('stat-supplier-total').textContent = total;
+    document.getElementById('stat-supplier-active').textContent = active;
+    document.getElementById('stat-supplier-paused').textContent = paused;
+    document.getElementById('stat-product-total').textContent = ptotal;
+    document.getElementById('stat-product-active').textContent = pactive;
+
+    this.renderChartCategory();
+    this.renderChartCertCoverage();
+    this.renderChartRating();
+    this.renderChartProvince();
+    this.renderChartPlatform();
+    this.renderChartPayment();
+    this.renderChartProductStatus();
+    this.renderChartService();
+    this.renderLiveFeed();
+  },
+
+  // ===== SVG 饼图 =====
+  svgPie(container, data, showLegend) {
+    if (!data.length) { container.innerHTML = '<div class="empty-state">暂无数据</div>'; return; }
+    const colors = ['#4361ee','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16','#ec4899','#6366f1','#14b8a6','#f43f5e'];
+    const total = data.reduce((a,d) => a+d.value, 0);
+    const cx=110, cy=110, r=90;
+    let html = `<svg viewBox="0 0 260 220" style="width:100%;max-width:320px;">`;
+    let angle = -90;
+    data.forEach((d,i) => {
+      const pct = d.value / total;
+      const sweep = pct * 360;
+      const endAngle = angle + sweep;
+      const largeArc = sweep > 180 ? 1 : 0;
+      const rad = a => (a * Math.PI) / 180;
+      const x1 = cx + r * Math.cos(rad(angle));
+      const y1 = cy + r * Math.sin(rad(angle));
+      const x2 = cx + r * Math.cos(rad(endAngle));
+      const y2 = cy + r * Math.sin(rad(endAngle));
+      html += `<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc},1 ${x2},${y2} Z" fill="${colors[i%colors.length]}" stroke="#fff" stroke-width="2" opacity="0.9">
+        <title>${d.label}: ${d.value} (${Math.round(pct*100)}%)</title>
+      </path>`;
+      // 标签线
+      const midAngle = angle + sweep/2;
+      const lx = cx + (r+18) * Math.cos(rad(midAngle));
+      const ly = cy + (r+18) * Math.sin(rad(midAngle));
+      if (pct > 0.04) {
+        html += `<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="#374151" font-weight="600">${Math.round(pct*100)}%</text>`;
+      }
+      angle = endAngle;
+    });
+    // 中心文字
+    html += `<circle cx="${cx}" cy="${cy}" r="42" fill="#fff"/>
+      <text x="${cx}" y="${cy-6}" text-anchor="middle" font-size="18" font-weight="700" fill="#1f2937">${total}</text>
+      <text x="${cx}" y="${cy+12}" text-anchor="middle" font-size="10" fill="#6b7280">总计</text>`;
+    html += `</svg>`;
+    // 图例
+    html += `<div style="display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:8px;justify-content:center;">
+      ${data.map((d,i) => `<span style="display:flex;align-items:center;gap:4px;font-size:12px;">
+        <span style="width:8px;height:8px;border-radius:2px;background:${colors[i%colors.length]};display:inline-block;"></span>
+        <span style="color:#374151;">${d.label}</span>
+        <span style="color:#9ca3af;">${d.value}</span>
+      </span>`).join('')}
+    </div>`;
+    container.innerHTML = html;
+  },
+
+  // ===== 柱状图 =====
+  barChart(container, data, colorFn) {
+    if (!data.length) { container.innerHTML = '<div class="empty-state">暂无数据</div>'; return; }
+    const max = Math.max(...data.map(d => d.value), 1);
+    container.innerHTML = data.map(d => `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <div style="width:80px;font-size:12px;color:#6b7280;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${d.label}">${d.label}</div>
+        <div style="flex:1;background:#f3f4f6;border-radius:4px;height:18px;overflow:hidden;">
+          <div style="height:100%;width:${Math.round(d.value/max*100)}%;background:${colorFn ? colorFn(d.label) : '#4361ee'};border-radius:4px;transition:width .4s;"></div>
+        </div>
+        <div style="width:30px;font-size:12px;font-weight:600;color:#374151;">${d.value}</div>
+      </div>
+    `).join('');
+  },
+
+  // ===== 水平进度条 =====
+  progressBars(container, data, colorFn) {
+    if (!data.length) { container.innerHTML = '<div class="empty-state">暂无数据</div>'; return; }
+    const max = Math.max(...data.map(d => d.value), 1);
+    container.innerHTML = data.map(d => {
+      const pct = Math.round(d.value / max * 100);
+      const color = colorFn ? colorFn(d.label) : '#4361ee';
+      return `
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+          <span style="font-size:12px;color:#374151;font-weight:500;">${d.label}</span>
+          <span style="font-size:12px;color:#6b7280;">${d.value}%</span>
+        </div>
+        <div style="background:#f3f4f6;border-radius:4px;height:8px;overflow:hidden;">
+          <div style="height:100%;width:${d.value}%;background:${color};border-radius:4px;transition:width .5s;"></div>
+        </div>
+      </div>`;
+    }).join('');
+  },
+
+  // ===== 产品类目分布（饼状图） =====
+  renderChartCategory() {
+    const cnt = {};
+    DB.products.forEach(p => { cnt[p.cat1] = (cnt[p.cat1]||0) + 1; });
+    this.svgPie(
+      document.getElementById('chart-category'),
+      Object.entries(cnt).map(([k,v])=>({label:k,value:v})).sort((a,b)=>b.value-a.value)
+    );
+  },
+
+  // ===== 资质覆盖情况 =====
+  renderChartCertCoverage() {
+    const total = DB.products.length || 1;
+    const cnt = {};
+    CERTS.forEach(c => cnt[c] = 0);
+    DB.products.forEach(p => {
+      Object.entries(p.certs||{}).forEach(([k,v]) => { if (v.checked) cnt[k] = (cnt[k]||0) + 1; });
+    });
+    const data = CERTS.filter(c => cnt[c] > 0).map(c => ({
+      label: c,
+      value: Math.round(cnt[c] / total * 100)
+    })).sort((a,b) => b.value - a.value);
+    const colorMap = {};
+    CERTS.forEach(c => { const cc = CERT_COLORS[c]; colorMap[c] = cc ? cc.color : '#6b7280'; });
+    this.progressBars(document.getElementById('chart-cert-coverage'), data, l => colorMap[l] || '#4361ee');
+  },
+
+  // ===== 供应商评级分布 =====
+  renderChartRating() {
+    const cnt = {};
+    RATINGS.forEach(r => cnt[r] = 0);
+    DB.suppliers.forEach(s => { if (cnt[s.rating] !== undefined) cnt[s.rating]++; });
+    const colors = {'S级':'#10b981','A级':'#4361ee','B级':'#f59e0b','C级':'#f97316','D级':'#ef4444'};
+    this.barChart(
+      document.getElementById('chart-rating'),
+      Object.entries(cnt).filter(([,v])=>v>0).map(([k,v])=>({label:k,value:v})),
+      l => colors[l] || '#4361ee'
+    );
+  },
+
+  // ===== 供应商省份分布 =====
+  renderChartProvince() {
+    const cnt = {};
+    DB.suppliers.forEach(s => { cnt[s.province] = (cnt[s.province]||0) + 1; });
+    const data = Object.entries(cnt).map(([k,v])=>({label:k,value:v})).sort((a,b)=>b.value-a.value).slice(0,10);
+    this.barChart(document.getElementById('chart-province'), data, null);
+  },
+
+  // ===== 产品平台分布 =====
+  renderChartPlatform() {
+    const cnt = {};
+    DB.products.forEach(p => (p.platforms||[]).forEach(pl => { cnt[pl] = (cnt[pl]||0)+1; }));
+    const data = Object.entries(cnt).map(([k,v])=>({label:k,value:v})).sort((a,b)=>b.value-a.value);
+    const colorMap = {};
+    Object.keys(PLATFORM_COLORS).forEach(k => { colorMap[k] = PLATFORM_COLORS[k].color; });
+    this.barChart(document.getElementById('chart-platform'), data, l => colorMap[l] || '#4361ee');
+  },
+
+  // ===== 供应商账期分布 =====
+  renderChartPayment() {
+    const cnt = {};
+    DB.suppliers.forEach(s => { cnt[s.payment] = (cnt[s.payment]||0) + 1; });
+    const colors = {'现结':'#10b981','月结':'#4361ee','季结':'#f59e0b','半年结':'#f97316','年结':'#8b5cf6','预付款':'#ef4444'};
+    const data = Object.entries(cnt).map(([k,v])=>({label:k,value:v})).sort((a,b)=>b.value-a.value);
+    this.barChart(document.getElementById('chart-payment'), data, l => colors[l] || '#6b7280');
+  },
+
+  // ===== 产品状态概览 =====
+  renderChartProductStatus() {
+    const cnt = {};
+    DB.products.forEach(p => { cnt[p.status] = (cnt[p.status]||0) + 1; });
+    const data = Object.entries(cnt).map(([k,v])=>({label:k,value:v})).sort((a,b)=>b.value-a.value);
+    this.svgPie(document.getElementById('chart-product-status'), data);
+  },
+
+  // ===== 供应商服务能力分布 =====
+  renderChartService() {
+    const cnt = {};
+    DB.suppliers.forEach(s => (s.service||'').split(',').filter(Boolean).forEach(sv => { cnt[sv.trim()] = (cnt[sv.trim()]||0)+1; }));
+    const data = Object.entries(cnt).map(([k,v])=>({label:k,value:v})).sort((a,b)=>b.value-a.value);
+    const colors = ['#4361ee','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16'];
+    this.barChart(document.getElementById('chart-service'), data, (l,i) => colors[Object.keys(cnt).indexOf(l) % colors.length]);
+  },
+
+  // ===== 实时动态 =====
+  renderLiveFeed() {
+    const now = new Date();
+    const feeds = [];
+    DB.suppliers.forEach(s => {
+      feeds.push({type:'supplier', icon:'🏭', text:`供应商 <strong>${s.name}</strong> 当前状态：<strong>${s.status}</strong>`, time: this.randomRecent(now)});
+    });
+    DB.products.forEach(p => {
+      const certList = Object.entries(p.certs||{}).filter(([,v])=>v.checked).map(([k])=>k);
+      if (certList.length) {
+        feeds.push({type:'cert', icon:'📜', text:`产品 <strong>${p.name}</strong> 已获认证：${certList.join('、')}`, time: this.randomRecent(now)});
+      }
+      feeds.push({type:'product', icon:'📦', text:`产品 <strong>${p.name}</strong> 状态：<strong>${p.status}</strong>`, time: this.randomRecent(now)});
+    });
+    feeds.sort((a,b) => b.time - a.time);
+    const recent = feeds.slice(0, 12);
+
+    document.getElementById('live-feed-body').innerHTML = recent.map(f => {
+      const ago = this.timeAgo(f.time, now);
+      const dotColor = f.type==='supplier' ? '#4361ee' : f.type==='cert' ? '#10b981' : '#f59e0b';
+      return `<div class="feed-item">
+        <span class="feed-dot" style="background:${dotColor}"></span>
+        <span class="feed-icon">${f.icon}</span>
+        <span class="feed-text">${f.text}</span>
+        <span class="feed-time">${ago}</span>
+      </div>`;
+    }).join('');
+  },
+
+  randomRecent(now) {
+    const offset = Math.floor(Math.random() * 3600000);
+    return new Date(now.getTime() - offset);
+  },
+
+  timeAgo(past, now) {
+    const diff = Math.floor((now - past) / 1000);
+    if (diff < 60) return '刚刚';
+    if (diff < 3600) return Math.floor(diff/60) + '分钟前';
+    if (diff < 86400) return Math.floor(diff/3600) + '小时前';
+    return Math.floor(diff/86400) + '天前';
+  }
+};
+
+// ============================================================
+// 供应商管理
+// ============================================================
+const Supplier = {
+  page: 1,
+  pageSize: 10,
+  filtered: [],
+  editId: null,
+  selectedIds: new Set(),
+
+  render() {
+    this.search();
+  },
+
+  search() {
+    const name = document.getElementById('s-name').value.toLowerCase();
+    const cat = document.getElementById('s-category').value;
+    const province = document.getElementById('s-province').value;
+    const status = document.getElementById('s-status').value;
+    const payment = document.getElementById('s-payment').value;
+    const business = document.getElementById('s-business').value.toLowerCase();
+
+    this.filtered = DB.suppliers.filter(s => {
+      if (name && !s.name.toLowerCase().includes(name)) return false;
+      if (cat && s.category !== cat) return false;
+      if (province && s.province !== province) return false;
+      if (status && s.status !== status) return false;
+      if (payment && s.payment !== payment) return false;
+      if (business && !(s.business||'').toLowerCase().includes(business)) return false;
+      return true;
+    });
+
+    this.page = 1;
+    this.selectedIds.clear();
+    this.renderTable();
+  },
+
+  resetSearch() {
+    ['s-name','s-business'].forEach(id => document.getElementById(id).value = '');
+    ['s-category','s-province','s-status','s-payment'].forEach(id => document.getElementById(id).value = '');
+    this.selectedIds.clear();
+    this.search();
+  },
+
+  renderTable() {
+    const total = this.filtered.length;
+    document.getElementById('supplier-count').textContent = `共 ${total} 条记录`;
+
+    const start = (this.page - 1) * this.pageSize;
+    const paged = this.filtered.slice(start, start + this.pageSize);
+
+    const tbody = document.getElementById('supplier-tbody');
+    if (!paged.length) {
+      tbody.innerHTML = '<tr><td colspan="11" class="empty-state">暂无数据</td></tr>';
+      document.getElementById('supplier-check-all').checked = false;
+    } else {
+      tbody.innerHTML = paged.map((s, idx) => {
+        const checked = this.selectedIds.has(s.id);
+        const shopLink = s.shopUrl ? `<a href="${s.shopUrl}" target="_blank" class="link-btn">🔗 查看</a>` : '<span style="color:#9ca3af">-</span>';
+        return `
+        <tr class="${checked ? 'row-selected' : ''}">
+          <td><input type="checkbox" class="row-checkbox" data-id="${s.id}" ${checked?'checked':''} onchange="Supplier.toggleRow(${s.id}, this.checked)"></td>
+          <td><span class="row-index">${start + idx + 1}</span></td>
+          <td><strong>${s.name}</strong></td>
+          <td>${s.contact}</td>
+          <td>${s.phone}</td>
+          <td><span class="tag tag-purple">${s.category}</span></td>
+          <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${s.business||''}">${s.business||'<span style="color:#9ca3af">-</span>'}</td>
+          <td>${shopLink}</td>
+          <td><span class="rating">${stars(s.rating)}</span></td>
+          <td>${statusTag(s.status)}</td>
+          <td>
+            <div class="op-btns">
+              <button class="btn btn-xs btn-primary" onclick="Supplier.openEdit(${s.id})">编辑</button>
+              <button class="btn btn-xs btn-outline" onclick="Supplier.openView(${s.id})">查看</button>
+              <button class="btn btn-xs btn-danger" onclick="Supplier.delete(${s.id})">删除</button>
+            </div>
+          </td>
+        </tr>
+      `}).join('');
+      // 更新全选框状态
+      const allChecked = paged.length > 0 && paged.every(s => this.selectedIds.has(s.id));
+      document.getElementById('supplier-check-all').checked = allChecked;
+    }
+
+    this.renderPagination(total);
+  },
+
+  renderPagination(total) {
+    const pages = Math.ceil(total / this.pageSize);
+    const el = document.getElementById('supplier-pagination');
+    if (pages <= 1) { el.innerHTML = ''; return; }
+
+    let html = `<button onclick="Supplier.goPage(${this.page-1})" ${this.page===1?'disabled':''}>‹</button>`;
+    for (let i = 1; i <= pages; i++) {
+      if (i === 1 || i === pages || Math.abs(i - this.page) <= 2) {
+        html += `<button class="${i===this.page?'active':''}" onclick="Supplier.goPage(${i})">${i}</button>`;
+      } else if (Math.abs(i - this.page) === 3) {
+        html += `<button disabled>…</button>`;
+      }
+    }
+    html += `<button onclick="Supplier.goPage(${this.page+1})" ${this.page===pages?'disabled':''}>›</button>`;
+    el.innerHTML = html;
+  },
+
+  goPage(p) {
+    const pages = Math.ceil(this.filtered.length / this.pageSize);
+    if (p < 1 || p > pages) return;
+    this.page = p;
+    this.renderTable();
+  },
+
+  openAdd() {
+    this.editId = null;
+    document.getElementById('supplier-drawer-title').textContent = '添加供应商';
+    document.getElementById('supplier-drawer-body').innerHTML = this.buildForm({});
+    document.getElementById('supplier-drawer').classList.add('open');
+  },
+
+  openEdit(id) {
+    this.editId = id;
+    const s = DB.suppliers.find(x => x.id === id);
+    document.getElementById('supplier-drawer-title').textContent = '编辑供应商';
+    document.getElementById('supplier-drawer-body').innerHTML = this.buildForm(s);
+    document.getElementById('supplier-drawer').classList.add('open');
+  },
+
+  buildForm(s) {
+    const cats = Object.keys(CATEGORY_DATA);
+    return `
+    <div class="form-section">
+      <div class="form-section-title">🔗 店铺与下单链接</div>
+      <div class="form-section-group">
+        <label>店铺链接</label>
+        <div class="collect-row">
+          <input type="url" id="f-shopUrl" value="${s.shopUrl||''}" placeholder="请输入店铺链接">
+          <button class="btn btn-sm btn-outline" onclick="Supplier.collect('shopUrl')">📥 采集</button>
+        </div>
+      </div>
+      <div class="form-section-group">
+        <label>下单链接</label>
+        <div class="collect-row">
+          <input type="url" id="f-orderUrl" value="${s.orderUrl||''}" placeholder="请输入下单链接">
+          <button class="btn btn-sm btn-outline" onclick="Supplier.collect('orderUrl')">📥 采集</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">📋 基本信息</div>
+      <div class="form-section-group">
+        <label>供应商名称 <span style="color:red">*</span></label>
+        <input type="text" id="f-name" value="${s.name||''}" placeholder="请输入供应商名称">
+      </div>
+      <div class="form-row">
+        <div class="form-section-group">
+          <label>联系人 <span style="color:red">*</span></label>
+          <input type="text" id="f-contact" value="${s.contact||''}" placeholder="请输入联系人姓名">
+        </div>
+        <div class="form-section-group">
+          <label>联系方式 <span style="color:red">*</span></label>
+          <input type="text" id="f-phone" value="${s.phone||''}" placeholder="手机号/微信/邮箱">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-section-group">
+          <label>产品种类 <span style="color:red">*</span></label>
+          <select id="f-category">
+            ${cats.map(c => `<option value="${c}" ${s.category===c?'selected':''}>${c}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-section-group">
+          <label>评级</label>
+          <select id="f-rating">
+            ${RATINGS.map(r => `<option value="${r}" ${s.rating===r?'selected':''}>${r}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-section-group">
+        <label>状态</label>
+        <select id="f-status">
+          <option value="合作中" ${s.status==='合作中'?'selected':''}>合作中</option>
+          <option value="已暂停" ${s.status==='已暂停'?'selected':''}>已暂停</option>
+        </select>
+      </div>
+      <div class="form-section-group">
+        <label>主营业务</label>
+        <input type="text" id="f-business" value="${s.business||''}" placeholder="如：蓝牙耳机、充电宝、手机配件">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">📍 地址信息</div>
+      <div class="form-row">
+        <div class="form-section-group">
+          <label>省份</label>
+          <select id="f-province">
+            <option value="">请选择</option>
+            ${PROVINCES.map(p => `<option value="${p}" ${s.province===p?'selected':''}>${p}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-section-group">
+          <label>城市</label>
+          <input type="text" id="f-city" value="${s.city||''}" placeholder="请输入城市">
+        </div>
+      </div>
+      <div class="form-section-group">
+        <label>详细地址</label>
+        <input type="text" id="f-address" value="${s.address||''}" placeholder="请输入详细地址">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">💰 退货与账期信息</div>
+      <div class="form-row">
+        <div class="form-section-group">
+          <label>账期</label>
+          <select id="f-payment">
+            ${PAYMENT_TERMS.map(p => `<option value="${p}" ${s.payment===p?'selected':''}>${p}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-section-group">
+          <label>退货政策</label>
+          <input type="text" id="f-returnPolicy" value="${s.returnPolicy||''}" placeholder="如：7天无理由退换货">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">⚙️ 业务能力</div>
+      <div class="form-section-group">
+        <label>服务能力（多选）</label>
+        <div class="checkbox-group" id="f-service-group">
+          ${['OEM代工','原创设计','品质把控','大货供应','快速发货','贴牌生产','ODM','小单起批'].map(sv => {
+            const checked = (s.service||'').includes(sv);
+            return `<label class="checkbox-item ${checked?'checked':''}" id="sv-${sv}">
+              <input type="checkbox" value="${sv}" ${checked?'checked':''} onchange="Supplier.toggleService(this)"> ${sv}
+            </label>`;
+          }).join('')}
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-section-group">
+          <label>成立年份</label>
+          <input type="date" id="f-founded" value="${s.founded||''}">
+        </div>
+        <div class="form-section-group">
+          <label>员工规模</label>
+          <select id="f-employees">
+            <option value="">请选择</option>
+            ${['1-20人','20-50人','50-100人','100-200人','200-500人','500-1000人','1000人以上'].map(e => `<option value="${e}" ${s.employees===e?'selected':''}>${e}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-section-group">
+        <label>年销售额</label>
+        <select id="f-annual">
+          <option value="">请选择</option>
+          ${['500万以下','500万-1000万','1000万-3000万','3000万-5000万','5000万以上'].map(a => `<option value="${a}" ${s.annual===a?'selected':''}>${a}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">📄 资质信息</div>
+      <div class="form-section-group">
+        <label>资质描述</label>
+        <textarea id="f-qualification" placeholder="请描述供应商的资质认证情况...">${s.qualification||''}</textarea>
+      </div>
+      <div class="form-section-group">
+        <label>资质证明文件</label>
+        <div class="upload-box" onclick="document.getElementById('f-qualFile').click()">
+          <input type="file" id="f-qualFile" multiple accept=".pdf,.jpg,.jpeg,.png">
+          <span>📎 点击上传资质证明文件（支持 PDF/JPG/PNG）</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">📝 备注</div>
+      <div class="form-section-group">
+        <textarea id="f-remark" placeholder="其他备注信息...">${s.remark||''}</textarea>
+      </div>
+    </div>
+    `;
+  },
+
+  toggleService(el) {
+    el.parentElement.classList.toggle('checked', el.checked);
+  },
+
+  collect(field) {
+    const url = document.getElementById(`f-${field}`).value;
+    if (!url) { toast('请先输入链接', 'info'); return; }
+    toast(`正在采集 ${url}...（演示：实际需要后端接口）`, 'info');
+  },
+
+  saveForm() {
+    const name = document.getElementById('f-name').value.trim();
+    const contact = document.getElementById('f-contact').value.trim();
+    const phone = document.getElementById('f-phone').value.trim();
+    if (!name) { toast('请填写供应商名称', 'error'); return; }
+    if (!contact) { toast('请填写联系人', 'error'); return; }
+    if (!phone) { toast('请填写联系方式', 'error'); return; }
+
+    const services = Array.from(document.querySelectorAll('#f-service-group input:checked')).map(e => e.value);
+
+    const data = {
+      name, contact, phone,
+      province: document.getElementById('f-province').value,
+      city: document.getElementById('f-city').value,
+      category: document.getElementById('f-category').value,
+      service: services.join(','),
+      rating: document.getElementById('f-rating').value,
+      status: document.getElementById('f-status').value,
+      business: document.getElementById('f-business').value.trim(),
+      payment: document.getElementById('f-payment').value,
+      returnPolicy: document.getElementById('f-returnPolicy').value,
+      shopUrl: document.getElementById('f-shopUrl').value,
+      orderUrl: document.getElementById('f-orderUrl').value,
+      address: document.getElementById('f-address').value,
+      founded: document.getElementById('f-founded').value,
+      employees: document.getElementById('f-employees').value,
+      annual: document.getElementById('f-annual').value,
+      qualification: document.getElementById('f-qualification').value,
+      remark: document.getElementById('f-remark').value
+    };
+
+    if (this.editId) {
+      const idx = DB.suppliers.findIndex(s => s.id === this.editId);
+      DB.suppliers[idx] = {...DB.suppliers[idx], ...data};
+      DB.save();
+      toast('供应商信息已更新，已自动保存');
+    } else {
+      data.id = DB.nextSupplierId++;
+      DB.suppliers.push(data);
+      DB.save();
+      // 更新产品选择器
+      const sel = document.getElementById('p-supplier');
+      const o = document.createElement('option');
+      o.value = data.id; o.textContent = data.name;
+      sel.appendChild(o);
+      toast('供应商添加成功，已自动保存');
+    }
+    this.closeDrawer();
+    this.render();
+    if (App.currentPage === 'dashboard') Dashboard.render();
+  },
+
+  closeDrawer() {
+    document.getElementById('supplier-drawer').classList.remove('open');
+  },
+
+  toggleAll(checked) {
+    const start = (this.page - 1) * this.pageSize;
+    const paged = this.filtered.slice(start, start + this.pageSize);
+    paged.forEach(s => {
+      if (checked) this.selectedIds.add(s.id);
+      else this.selectedIds.delete(s.id);
+    });
+    this.renderTable();
+  },
+
+  toggleRow(id, checked) {
+    if (checked) this.selectedIds.add(id);
+    else this.selectedIds.delete(id);
+    // 更新全选框
+    const start = (this.page - 1) * this.pageSize;
+    const paged = this.filtered.slice(start, start + this.pageSize);
+    const allChecked = paged.length > 0 && paged.every(s => this.selectedIds.has(s.id));
+    document.getElementById('supplier-check-all').checked = allChecked;
+    // 行高亮
+    const cb = document.querySelector(`.row-checkbox[data-id="${id}"]`);
+    if (cb) cb.closest('tr').classList.toggle('row-selected', checked);
+  },
+
+  delete(id) {
+    if (!confirm('确认删除该供应商？')) return;
+    DB.suppliers = DB.suppliers.filter(s => s.id !== id);
+    DB.save();
+    this.selectedIds.delete(id);
+    toast('删除成功，已自动保存');
+    this.render();
+  },
+
+  exportCSV() {
+    let items = this.selectedIds.size > 0
+      ? this.filtered.filter(s => this.selectedIds.has(s.id))
+      : this.filtered;
+    if (!items.length) { toast('没有可导出的数据', 'info'); return; }
+    const headers = ['序号','供应商名称','联系人','联系方式','产品种类','主营业务','店铺链接','评级','状态'];
+    const rows = items.map((s, i) => [
+      i + 1, s.name, s.contact, s.phone,
+      s.category, s.business || '', s.shopUrl || '',
+      s.rating, s.status
+    ]);
+    const csv = '\uFEFF' + [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = '供应商列表.csv'; a.click();
+    URL.revokeObjectURL(url);
+    toast(`已导出 ${items.length} 条数据`);
+  },
+
+  openView(id) {
+    const s = DB.suppliers.find(x => x.id === id);
+    const html = `
+      <div class="detail-section">
+        <div class="detail-section-title">基本信息</div>
+        <div class="detail-grid">
+          <div class="detail-item"><div class="detail-label">供应商名称</div><div class="detail-value">${s.name}</div></div>
+          <div class="detail-item"><div class="detail-label">联系人</div><div class="detail-value">${s.contact}</div></div>
+          <div class="detail-item"><div class="detail-label">联系方式</div><div class="detail-value">${s.phone}</div></div>
+          <div class="detail-item"><div class="detail-label">产品种类</div><div class="detail-value">${s.category}</div></div>
+          <div class="detail-item"><div class="detail-label">主营业务</div><div class="detail-value">${s.business||'-'}</div></div>
+          <div class="detail-item"><div class="detail-label">评级</div><div class="detail-value"><span class="rating">${stars(s.rating)}</span> ${s.rating}</div></div>
+          <div class="detail-item"><div class="detail-label">状态</div><div class="detail-value">${statusTag(s.status)}</div></div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">地址信息</div>
+        <div class="detail-grid">
+          <div class="detail-item"><div class="detail-label">省份/城市</div><div class="detail-value">${s.province||'-'}/${s.city||'-'}</div></div>
+          <div class="detail-item"><div class="detail-label">详细地址</div><div class="detail-value">${s.address||'-'}</div></div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">店铺地址</div>
+        <div class="detail-grid">
+          <div class="detail-item"><div class="detail-label">店铺链接</div><div class="detail-value">${s.shopUrl ? `<a href="${s.shopUrl}" target="_blank" style="color:var(--primary)">${s.shopUrl}</a>` : '-'}</div></div>
+          <div class="detail-item"><div class="detail-label">下单链接</div><div class="detail-value">${s.orderUrl ? `<a href="${s.orderUrl}" target="_blank" style="color:var(--primary)">${s.orderUrl}</a>` : '-'}</div></div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">账期与业务</div>
+        <div class="detail-grid">
+          <div class="detail-item"><div class="detail-label">账期</div><div class="detail-value">${s.payment||'-'}</div></div>
+          <div class="detail-item"><div class="detail-label">退货政策</div><div class="detail-value">${s.returnPolicy||'-'}</div></div>
+          <div class="detail-item"><div class="detail-label">服务能力</div><div class="detail-value">${s.service||'-'}</div></div>
+          <div class="detail-item"><div class="detail-label">员工规模</div><div class="detail-value">${s.employees||'-'}</div></div>
+          <div class="detail-item"><div class="detail-label">年销售额</div><div class="detail-value">${s.annual||'-'}</div></div>
+          <div class="detail-item"><div class="detail-label">成立时间</div><div class="detail-value">${s.founded||'-'}</div></div>
+        </div>
+      </div>
+      ${s.remark ? `<div class="detail-section"><div class="detail-section-title">备注</div><p>${s.remark}</p></div>` : ''}
+    `;
+    App.openModal(`供应商详情 - ${s.name}`, html);
+  }
+};
+
+// ============================================================
+// 产品管理
+// ============================================================
+const Product = {
+  page: 1,
+  pageSize: 10,
+  filtered: [],
+  editId: null,
+  selectedIds: new Set(),
+
+  render() {
+    this.search();
+  },
+
+  search() {
+    const pid    = document.getElementById('p-id').value.trim().toLowerCase();
+    const name   = document.getElementById('p-name').value.toLowerCase();
+    const cat1   = document.getElementById('p-cat1').value;
+    const supplierId = document.getElementById('p-supplier').value;
+    const status = document.getElementById('p-status').value;
+    const platform = document.getElementById('p-platform').value;
+    const cert   = document.getElementById('p-cert').value;
+
+    this.filtered = DB.products.filter(p => {
+      if (pid  && !p.id.toLowerCase().includes(pid)) return false;
+      if (name && !p.name.toLowerCase().includes(name)) return false;
+      if (cat1 && p.cat1 !== cat1) return false;
+      if (supplierId && String(p.supplierId) !== supplierId) return false;
+      if (status && p.status !== status) return false;
+      if (platform && !(p.platforms||[]).includes(platform)) return false;
+      if (cert && !(p.certs && p.certs[cert] && p.certs[cert].checked)) return false;
+      return true;
+    });
+
+    this.page = 1;
+    this.selectedIds.clear();
+    this.renderTable();
+  },
+
+  onCat1Change() {
+    this.search();
+  },
+
+  resetSearch() {
+    ['p-id','p-name'].forEach(id => document.getElementById(id).value = '');
+    ['p-cat1','p-supplier','p-status','p-platform','p-cert'].forEach(id => document.getElementById(id).value = '');
+    this.selectedIds.clear();
+    this.search();
+  },
+
+  renderTable() {
+    const total = this.filtered.length;
+    document.getElementById('product-count').textContent = `共 ${total} 条记录`;
+
+    const start = (this.page - 1) * this.pageSize;
+    const paged = this.filtered.slice(start, start + this.pageSize);
+
+    const tbody = document.getElementById('product-tbody');
+    if (!paged.length) {
+      tbody.innerHTML = '<tr><td colspan="11" class="empty-state">暂无数据</td></tr>';
+      document.getElementById('product-check-all').checked = false;
+    } else {
+      tbody.innerHTML = paged.map((p, idx) => {
+        const certList = Object.entries(p.certs||{}).filter(([,v])=>v.checked).map(([k])=>k);
+        const orderLink = p.orderUrl ? `<a href="${p.orderUrl}" target="_blank" class="link-btn">🔗 查看</a>` : '<span style="color:#9ca3af">-</span>';
+        const checked = this.selectedIds.has(p.id);
+        return `
+          <tr class="${checked ? 'row-selected' : ''}">
+            <td><input type="checkbox" class="row-checkbox" data-id="${p.id}" ${checked?'checked':''} onchange="Product.toggleRow('${p.id}', this.checked)"></td>
+            <td><span class="row-index">${start + idx + 1}</span></td>
+            <td><span style="font-family:monospace;color:var(--primary)">${p.id}</span></td>
+            <td><strong>${p.name}</strong></td>
+            <td>${p.cat1} / ${p.cat2}</td>
+            <td><div style="display:flex;flex-wrap:wrap;gap:3px;">${certList.map(c=>certTag(c,p.id)).join('')||'<span style="color:#9ca3af">-</span>'}</div></td>
+            <td><div class="platform-tags">${platformTags(p.platforms)||'<span style="color:#9ca3af">-</span>'}</div></td>
+            <td>${p.supplierName||'-'}</td>
+            <td>${orderLink}</td>
+            <td>${statusTag(p.status)}</td>
+            <td>
+              <div class="op-btns">
+                <button class="btn btn-xs btn-primary" onclick="Product.openEdit('${p.id}')">编辑</button>
+                <button class="btn btn-xs btn-outline" onclick="Product.openView('${p.id}')">查看</button>
+                <button class="btn btn-xs btn-danger" onclick="Product.delete('${p.id}')">删除</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      const allChecked = paged.length > 0 && paged.every(p => this.selectedIds.has(p.id));
+      document.getElementById('product-check-all').checked = allChecked;
+    }
+
+    this.renderPagination(total);
+  },
+
+  renderPagination(total) {
+    const pages = Math.ceil(total / this.pageSize);
+    const el = document.getElementById('product-pagination');
+    if (pages <= 1) { el.innerHTML = ''; return; }
+
+    let html = `<button onclick="Product.goPage(${this.page-1})" ${this.page===1?'disabled':''}>‹</button>`;
+    for (let i = 1; i <= pages; i++) {
+      if (i === 1 || i === pages || Math.abs(i - this.page) <= 2) {
+        html += `<button class="${i===this.page?'active':''}" onclick="Product.goPage(${i})">${i}</button>`;
+      } else if (Math.abs(i - this.page) === 3) {
+        html += `<button disabled>…</button>`;
+      }
+    }
+    html += `<button onclick="Product.goPage(${this.page+1})" ${this.page===pages?'disabled':''}>›</button>`;
+    el.innerHTML = html;
+  },
+
+  goPage(p) {
+    const pages = Math.ceil(this.filtered.length / this.pageSize);
+    if (p < 1 || p > pages) return;
+    this.page = p;
+    this.renderTable();
+  },
+
+  openAdd() {
+    this.editId = null;
+    this._certFiles = {};
+    document.getElementById('product-drawer-title').textContent = '添加产品';
+    document.getElementById('product-drawer-body').innerHTML = this.buildForm({});
+    document.getElementById('product-drawer').classList.add('open');
+  },
+
+  openEdit(id) {
+    this.editId = id;
+    this._certFiles = {};
+    const p = DB.products.find(x => x.id === id);
+    // 从 FileStore 加载已保存的文件数据（含 dataUrl base64）
+    if (p && p.certs) {
+      CERTS.forEach(cert => {
+        const cv = p.certs[cert];
+        if (cv && cv.checked) {
+          // 优先从 FileStore 获取（包含 dataUrl）
+          const stored = FileStore.get(id, cert);
+          if (stored && stored.length > 0) {
+            this._certFiles[cert] = stored.map(f => ({name: f.name, dataUrl: f.dataUrl || ''}));
+          } else if (cv.fileData && cv.fileData.length) {
+            this._certFiles[cert] = cv.fileData.map(f => ({name: f.name, dataUrl: f.dataUrl || ''}));
+          } else {
+            // 兼容旧数据：只有文件名，无 dataUrl
+            const names = cv.files || (cv.file ? [cv.file] : []);
+            if (names.length) this._certFiles[cert] = names.map(n => ({name: n, dataUrl: ''}));
+          }
+        }
+      });
+    }
+    document.getElementById('product-drawer-title').textContent = '编辑产品';
+    document.getElementById('product-drawer-body').innerHTML = this.buildForm(p);
+    document.getElementById('product-drawer').classList.add('open');
+  },
+
+  buildForm(p) {
+    const cat1Keys = Object.keys(CATEGORY_DATA);
+    const selectedCat1 = p.cat1 || '';
+    const cat2Keys = selectedCat1 ? Object.keys(CATEGORY_DATA[selectedCat1]) : [];
+    const selectedCat2 = p.cat2 || '';
+    const cat3Keys = (selectedCat1 && selectedCat2 && CATEGORY_DATA[selectedCat1]) ? (CATEGORY_DATA[selectedCat1][selectedCat2]||[]) : [];
+
+    return `
+    <div class="form-section">
+      <div class="form-section-title">🔗 下单链接</div>
+      <div class="form-section-group">
+        <label>下单链接</label>
+        <div class="collect-row">
+          <input type="url" id="pf-orderUrl" value="${p.orderUrl||''}" placeholder="请输入下单链接">
+          <button class="btn btn-sm btn-outline" onclick="Product.collect()">📥 采集</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">📋 基本信息</div>
+      <div class="form-section-group">
+        <label>产品ID <span style="color:red">*</span></label>
+        <input type="text" id="pf-id" value="${p.id || genProductId(DB.nextProductId || (DB.products.length + 1))}" placeholder="请输入产品ID" style="font-family:monospace;">
+      </div>
+      <div class="form-section-group">
+        <label>产品名称 <span style="color:red">*</span></label>
+        <input type="text" id="pf-name" value="${p.name||''}" placeholder="请输入产品名称">
+      </div>
+      <div class="form-section-group">
+        <label>所属供应商 <span style="color:red">*</span></label>
+        <div class="supplier-select-wrapper" id="pf-supplier-wrapper">
+          <input type="text" id="pf-supplier-search" placeholder="搜索或选择供应商..." autocomplete="off" oninput="Product.filterSupplierList(this.value)" onfocus="Product.showSupplierDropdown()" value="${p.supplierId ? (DB.suppliers.find(s=>s.id===p.supplierId)||{}).name||'' : ''}">
+          <input type="hidden" id="pf-supplier" value="${p.supplierId||''}">
+          <span class="supplier-select-arrow" onclick="Product.toggleSupplierDropdown()">▼</span>
+          <div class="supplier-dropdown" id="pf-supplier-dropdown">
+            ${Product._buildSupplierOptions(p.supplierId, '')}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">📂 类目信息</div>
+      <div class="form-row-3">
+        <div class="form-section-group">
+          <label>一级类目 <span style="color:red">*</span></label>
+          <select id="pf-cat1" onchange="Product.onFormCat1Change()">
+            <option value="">请选择</option>
+            ${cat1Keys.map(k => `<option value="${k}" ${k===selectedCat1?'selected':''}>${k}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-section-group">
+          <label>二级类目</label>
+          <select id="pf-cat2" onchange="Product.onFormCat2Change()">
+            <option value="">请选择</option>
+            ${cat2Keys.map(k => `<option value="${k}" ${k===selectedCat2?'selected':''}>${k}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-section-group">
+          <label>三级类目</label>
+          <select id="pf-cat3">
+            <option value="">请选择</option>
+            ${cat3Keys.map(k => `<option value="${k}" ${k===p.cat3?'selected':''}>${k}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">🌍 销售平台</div>
+      <div class="checkbox-group" id="pf-platform-group">
+        ${PLATFORMS.map(pl => {
+          const checked = (p.platforms||[]).includes(pl);
+          const c = PLATFORM_COLORS[pl] || {bg:'#f3f4f6',color:'#6b7280',border:'#d1d5db'};
+          return `<label class="checkbox-item ${checked?'checked':''}" id="pl-${pl}" style="${checked?`background:${c.bg};border-color:${c.border};color:${c.color}`:''}">
+            <input type="checkbox" value="${pl}" ${checked?'checked':''} onchange="Product.togglePlatform(this)"> ${pl}
+          </label>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">📜 资质认证</div>
+      <div id="pf-certs-group">
+        ${CERTS.map(cert => {
+          const cv = (p.certs||{})[cert] || {checked:false,date:'',files:[],fileData:[]};
+          // 兼容旧数据：优先用 fileData，否则用 files/file 字段
+          const cvFiles = (cv.fileData && cv.fileData.length)
+            ? cv.fileData
+            : (cv.files||[]).map(n=>({name:n,dataUrl:''})).concat(cv.file?[{name:cv.file,dataUrl:''}]:[]);
+          return `
+          <div class="cert-item" id="cert-row-${cert}" style="${cv.checked?`background:${(CERT_COLORS[cert]||CERT_COLORS['其他资质']).bg};border-left:3px solid ${(CERT_COLORS[cert]||CERT_COLORS['其他资质']).border}`:''}">
+            <input type="checkbox" id="cert-chk-${cert}" ${cv.checked?'checked':''} onchange="Product.toggleCert('${cert}')">
+            <label for="cert-chk-${cert}" style="min-width:80px;font-weight:500;cursor:pointer;color:${cv.checked?(CERT_COLORS[cert]||CERT_COLORS['其他资质']).color:'#374151'}">${cert}</label>
+            <div id="cert-detail-${cert}" style="${cv.checked?'':'display:none'};display:${cv.checked?'flex':'none'};align-items:center;gap:8px;flex:1;flex-wrap:wrap;">
+              <input type="date" id="cert-date-${cert}" value="${cv.date||''}" placeholder="到期日期" style="min-width:140px;">
+              <label class="cert-upload-btn" onclick="document.getElementById('cert-file-${cert}').click()" style="cursor:pointer;padding:3px 10px;border:1px solid #d1d5db;border-radius:4px;font-size:12px;background:#fff;white-space:nowrap;">📎 选择文件</label>
+              <input type="file" id="cert-file-${cert}" accept=".pdf,.jpg,.jpeg,.png" multiple style="display:none;" onchange="Product.onCertFileChange('${cert}', this)">
+              <div id="cert-filelist-${cert}" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
+                ${cvFiles.map((f,i)=>`<span class="cert-file-tag" style="background:#f3f4f6;border:1px solid #e5e7eb;border-radius:3px;padding:2px 6px;font-size:11px;display:flex;align-items:center;gap:3px;">📄${f.name}<span onclick="Product.removeCertFile('${cert}',${i})" style="cursor:pointer;color:#ef4444;margin-left:2px;font-weight:bold;" title="删除">×</span></span>`).join('')}
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">⚙️ 状态设置</div>
+      <div class="form-section-group">
+        <label>产品状态</label>
+        <select id="pf-status">
+          <option value="上架中" ${p.status==='上架中'||!p.status?'selected':''}>上架中</option>
+          <option value="已下架" ${p.status==='已下架'?'selected':''}>已下架</option>
+        </select>
+      </div>
+      <div class="form-section-group">
+        <label>备注</label>
+        <textarea id="pf-remark" placeholder="其他备注...">${p.remark||''}</textarea>
+      </div>
+    </div>
+    `;
+  },
+
+  onFormSupplierChange() {
+    // 可扩展：自动填充供应商相关信息
+  },
+
+  // ===== 供应商模糊搜索选择器 =====
+  _buildSupplierOptions(selectedId, keyword) {
+    const kw = (keyword||'').trim().toLowerCase();
+    // 按添加时间倒序（新添加的在前，id 越大越新）
+    const sorted = [...DB.suppliers].sort((a, b) => b.id - a.id);
+    const filtered = kw
+      ? sorted.filter(s => s.name.toLowerCase().includes(kw) || (s.contact||'').toLowerCase().includes(kw) || String(s.id).includes(kw))
+      : sorted;
+    if (!filtered.length) {
+      return '<div class="supplier-dropdown-empty">无匹配供应商</div>';
+    }
+    return filtered.map(s => {
+      const isSelected = s.id === selectedId;
+      const statusIcon = s.status === '合作中' ? '🟢' : s.status === '已暂停' ? '🔴' : '⚪';
+      return `<div class="supplier-dropdown-item${isSelected?' selected':''}" data-id="${s.id}" onclick="Product.selectSupplier(${s.id},'${s.name.replace(/'/g,"\\'")}')">
+        <span class="supplier-dropdown-name">${s.name}</span>
+        <span class="supplier-dropdown-meta">${statusIcon} ${s.contact||''} ${s.province||''}</span>
+      </div>`;
+    }).join('');
+  },
+
+  filterSupplierList(keyword) {
+    const selectedId = parseInt(document.getElementById('pf-supplier').value) || null;
+    const dropdown = document.getElementById('pf-supplier-dropdown');
+    dropdown.innerHTML = this._buildSupplierOptions(selectedId, keyword);
+    this.showSupplierDropdown();
+  },
+
+  selectSupplier(id, name) {
+    document.getElementById('pf-supplier').value = id;
+    document.getElementById('pf-supplier-search').value = name;
+    this.hideSupplierDropdown();
+    this.onFormSupplierChange();
+  },
+
+  showSupplierDropdown() {
+    document.getElementById('pf-supplier-dropdown').classList.add('open');
+  },
+
+  hideSupplierDropdown() {
+    document.getElementById('pf-supplier-dropdown').classList.remove('open');
+  },
+
+  toggleSupplierDropdown() {
+    const dd = document.getElementById('pf-supplier-dropdown');
+    if (dd.classList.contains('open')) {
+      this.hideSupplierDropdown();
+    } else {
+      const keyword = document.getElementById('pf-supplier-search').value;
+      const selectedId = parseInt(document.getElementById('pf-supplier').value) || null;
+      dd.innerHTML = this._buildSupplierOptions(selectedId, keyword);
+      this.showSupplierDropdown();
+    }
+  },
+
+  onFormCat1Change() {
+    const v = document.getElementById('pf-cat1').value;
+    const cat2s = v ? Object.keys(CATEGORY_DATA[v]) : [];
+    const sel2 = document.getElementById('pf-cat2');
+    sel2.innerHTML = '<option value="">请选择</option>' + cat2s.map(k => `<option value="${k}">${k}</option>`).join('');
+    document.getElementById('pf-cat3').innerHTML = '<option value="">请选择</option>';
+  },
+
+  onFormCat2Change() {
+    const cat1 = document.getElementById('pf-cat1').value;
+    const cat2 = document.getElementById('pf-cat2').value;
+    const cat3s = (cat1 && cat2) ? (CATEGORY_DATA[cat1][cat2]||[]) : [];
+    document.getElementById('pf-cat3').innerHTML = '<option value="">请选择</option>' + cat3s.map(k => `<option value="${k}">${k}</option>`).join('');
+  },
+
+  togglePlatform(el) {
+    const pl = el.value;
+    const c = PLATFORM_COLORS[pl] || {bg:'#e8f0fe',color:'#4361ee',border:'#4361ee'};
+    el.parentElement.classList.toggle('checked', el.checked);
+    if (el.checked) {
+      el.parentElement.style.background = c.bg;
+      el.parentElement.style.borderColor = c.border;
+      el.parentElement.style.color = c.color;
+    } else {
+      el.parentElement.style.background = '';
+      el.parentElement.style.borderColor = '';
+      el.parentElement.style.color = '';
+    }
+  },
+
+  toggleCert(cert) {
+    const chk = document.getElementById(`cert-chk-${cert}`);
+    const detail = document.getElementById(`cert-detail-${cert}`);
+    const row = document.getElementById(`cert-row-${cert}`);
+    detail.style.display = chk.checked ? 'flex' : 'none';
+    const c = CERT_COLORS[cert] || CERT_COLORS["其他资质"];
+    if (chk.checked) {
+      row.style.background = c.bg;
+      row.style.borderLeft = `3px solid ${c.border}`;
+    } else {
+      row.style.background = '';
+      row.style.borderLeft = '';
+    }
+  },
+
+  // 存储 {name, dataUrl} 结构，支持下载
+  _certFiles: {},
+
+  onCertFileChange(cert, input) {
+    if (!this._certFiles[cert]) this._certFiles[cert] = [];
+    const fileArr = Array.from(input.files);
+    let pending = fileArr.length;
+    if (!pending) return;
+    fileArr.forEach(file => {
+      // 去重：同名已存在则跳过
+      if (this._certFiles[cert].find(f => f.name === file.name)) {
+        pending--;
+        if (pending === 0) this._renderCertFileList(cert);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this._certFiles[cert].push({ name: file.name, dataUrl: e.target.result });
+        pending--;
+        if (pending === 0) this._renderCertFileList(cert);
+      };
+      reader.readAsDataURL(file);
+    });
+    input.value = ''; // 清空 input 以便下次继续选
+  },
+
+  removeCertFile(cert, idx) {
+    if (!this._certFiles[cert]) return;
+    this._certFiles[cert].splice(idx, 1);
+    this._renderCertFileList(cert);
+  },
+
+  _renderCertFileList(cert) {
+    const list = document.getElementById(`cert-filelist-${cert}`);
+    if (!list) return;
+    const files = this._certFiles[cert] || [];
+    list.innerHTML = files.map((f, i) =>
+      `<span class="cert-file-tag" style="background:#f3f4f6;border:1px solid #e5e7eb;border-radius:3px;padding:2px 6px;font-size:11px;display:flex;align-items:center;gap:3px;">📄${f.name}<span onclick="Product.removeCertFile('${cert}',${i})" style="cursor:pointer;color:#ef4444;margin-left:2px;font-weight:bold;" title="删除">×</span></span>`
+    ).join('');
+  },
+
+  collect() {
+    const url = document.getElementById('pf-orderUrl').value;
+    if (!url) { toast('请先输入下单链接', 'info'); return; }
+    toast(`正在采集 ${url}...（演示：实际需要后端接口）`, 'info');
+  },
+
+  saveForm() {
+    const pid = document.getElementById('pf-id').value.trim();
+    const name = document.getElementById('pf-name').value.trim();
+    const supplierId = parseInt(document.getElementById('pf-supplier').value);
+    const cat1 = document.getElementById('pf-cat1').value;
+    if (!pid) { toast('请填写产品ID', 'error'); return; }
+    if (!name) { toast('请填写产品名称', 'error'); return; }
+    if (!supplierId) { toast('请选择所属供应商', 'error'); return; }
+    if (!cat1) { toast('请选择一级类目', 'error'); return; }
+
+    // 产品ID唯一性校验
+    const duplicate = DB.products.find(p => p.id === pid && p.id !== this.editId);
+    if (duplicate) { toast('产品ID已存在，请更换', 'error'); return; }
+
+    const platforms = Array.from(document.querySelectorAll('#pf-platform-group input:checked')).map(e => e.value);
+    const supplier = DB.suppliers.find(s => s.id === supplierId);
+
+    const certs = {};
+    CERTS.forEach(cert => {
+      const checked = document.getElementById(`cert-chk-${cert}`).checked;
+      if (checked) {
+        const fileItems = this._certFiles[cert] || [];
+        certs[cert] = {
+          checked: true,
+          date: document.getElementById(`cert-date-${cert}`).value,
+          files: fileItems.map(f => f.name),
+          fileData: fileItems   // [{name, dataUrl}, ...]
+        };
+      }
+    });
+
+    const data = {
+      id: pid,
+      name,
+      supplierId,
+      supplierName: supplier ? supplier.name : '',
+      cat1,
+      cat2: document.getElementById('pf-cat2').value,
+      cat3: document.getElementById('pf-cat3').value,
+      platforms,
+      certs,
+      status: document.getElementById('pf-status').value,
+      orderUrl: document.getElementById('pf-orderUrl').value,
+      remark: document.getElementById('pf-remark').value
+    };
+
+    if (this.editId) {
+      const idx = DB.products.findIndex(p => p.id === this.editId);
+      DB.products[idx] = {...DB.products[idx], ...data};
+      // 先保存文件到 FileStore（独立存储，不受主数据配额影响）
+      DB.saveCertFiles(data.id, certs);
+      // 注入 fileData 到内存对象（供当次查看用）
+      CERTS.forEach(cert => {
+        if (DB.products[idx].certs[cert]) {
+          DB.products[idx].certs[cert].fileData = FileStore.get(data.id, cert);
+        }
+      });
+      DB.save();
+      toast('产品信息已更新，已自动保存');
+    } else {
+      DB.products.push(data);
+      // 先保存文件到 FileStore
+      DB.saveCertFiles(data.id, certs);
+      // 注入 fileData 到内存对象
+      const newProd = DB.products[DB.products.length - 1];
+      CERTS.forEach(cert => {
+        if (newProd.certs[cert]) {
+          newProd.certs[cert].fileData = FileStore.get(data.id, cert);
+        }
+      });
+      DB.save();
+      toast('产品添加成功，已自动保存');
+    }
+    this.closeDrawer();
+    this.render();
+  },
+
+  closeDrawer() {
+    document.getElementById('product-drawer').classList.remove('open');
+  },
+
+  toggleAll(checked) {
+    const start = (this.page - 1) * this.pageSize;
+    const paged = this.filtered.slice(start, start + this.pageSize);
+    paged.forEach(p => {
+      if (checked) this.selectedIds.add(p.id);
+      else this.selectedIds.delete(p.id);
+    });
+    this.renderTable();
+  },
+
+  toggleRow(id, checked) {
+    if (checked) this.selectedIds.add(id);
+    else this.selectedIds.delete(id);
+    const start = (this.page - 1) * this.pageSize;
+    const paged = this.filtered.slice(start, start + this.pageSize);
+    const allChecked = paged.length > 0 && paged.every(p => this.selectedIds.has(p.id));
+    document.getElementById('product-check-all').checked = allChecked;
+    const cb = document.querySelector(`.row-checkbox[data-id="${id}"]`);
+    if (cb) cb.closest('tr').classList.toggle('row-selected', checked);
+  },
+
+  delete(id) {
+    if (!confirm('确认删除该产品？')) return;
+    DB.products = DB.products.filter(p => p.id !== id);
+    FileStore.deleteProduct(id);  // 同步清理文件数据
+    DB.save();
+    this.selectedIds.delete(id);
+    toast('删除成功，已自动保存');
+    this.render();
+  },
+
+  exportCSV() {
+    let items = this.selectedIds.size > 0
+      ? this.filtered.filter(p => this.selectedIds.has(p.id))
+      : this.filtered;
+    if (!items.length) { toast('没有可导出的数据', 'info'); return; }
+    const headers = ['序号','产品ID','产品名称','类目','资质','销售平台','供应商','采购地址','状态'];
+    const rows = items.map((p, i) => {
+      const certList = Object.entries(p.certs||{}).filter(([,v])=>v.checked).map(([k])=>k).join('/');
+      return [
+        i + 1, p.id, p.name, p.cat1 + '/' + p.cat2,
+        certList, (p.platforms||[]).join('/'), p.supplierName || '',
+        p.orderUrl || '', p.status
+      ];
+    });
+    const csv = '\uFEFF' + [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = '产品列表.csv'; a.click();
+    URL.revokeObjectURL(url);
+    toast(`已导出 ${items.length} 条数据`);
+  },
+
+  showCertFiles(productId, cert, event) {
+    if (event) event.stopPropagation();
+    const p = DB.products.find(x => x.id === productId);
+    if (!p) return;
+    const cv = p.certs && p.certs[cert];
+    if (!cv) return;
+    // 优先从 FileStore 获取（含 dataUrl），兼容内存 fileData
+    const fileData = FileStore.get(productId, cert).length > 0
+      ? FileStore.get(productId, cert)
+      : (cv.fileData || []);
+    const c = CERT_COLORS[cert] || CERT_COLORS["其他资质"];
+
+    const fileRows = fileData.map((f, i) => {
+      const ext = (f.name.split('.').pop()||'').toLowerCase();
+      const icon = ext === 'pdf' ? '📕' : ['jpg','jpeg','png'].includes(ext) ? '🖼️' : '📄';
+      const canPreview = ['jpg','jpeg','png'].includes(ext) || ext === 'pdf';
+      const hasData = !!f.dataUrl;
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;background:#fafafa;margin-bottom:8px;">
+          <span style="font-size:22px;flex-shrink:0;">${icon}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:500;color:#374151;word-break:break-all;">${f.name}</div>
+            <div style="font-size:11px;color:#9ca3af;margin-top:2px;">${ext.toUpperCase()} 文件</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            ${hasData && canPreview ? `<button onclick="Product._previewCertFile('${productId}','${cert}',${i})" style="padding:4px 10px;border:1px solid #3b82f6;border-radius:5px;background:#eff6ff;color:#3b82f6;font-size:12px;cursor:pointer;">👁 预览</button>` : ''}
+            ${hasData ? `<button onclick="Product._downloadCertFile('${productId}','${cert}',${i})" style="padding:4px 10px;border:1px solid #10b981;border-radius:5px;background:#ecfdf5;color:#10b981;font-size:12px;cursor:pointer;">⬇ 下载</button>` : `<span style="font-size:12px;color:#9ca3af;">（旧数据暂无文件内容）</span>`}
+          </div>
+        </div>`;
+    }).join('');
+
+    const html = `
+      <div style="margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+        <span style="background:${c.bg};color:${c.color};border:1px solid ${c.border};border-radius:6px;padding:4px 14px;font-size:14px;font-weight:600;">${cert}</span>
+        ${cv.date ? `<span style="color:#6b7280;font-size:13px;">到期日期：${cv.date}</span>` : ''}
+      </div>
+      <div style="font-size:13px;color:#6b7280;margin-bottom:10px;">共 ${fileData.length} 个文件</div>
+      ${fileData.length ? fileRows : '<div style="text-align:center;padding:32px 0;color:#9ca3af;font-size:14px;">暂无已上传的文件</div>'}
+    `;
+    App.openModal(`${p.name} — ${cert} 资质文件`, html);
+  },
+
+  _downloadCertFile(productId, cert, idx) {
+    const files = FileStore.get(productId, cert);
+    const p = DB.products.find(x => x.id === productId);
+    const f = files[idx] || (p && p.certs && p.certs[cert] && (p.certs[cert].fileData||[])[idx]);
+    if (!f || !f.dataUrl) { toast('文件数据不存在', 'error'); return; }
+    const a = document.createElement('a');
+    a.href = f.dataUrl;
+    a.download = f.name;
+    a.click();
+  },
+
+  _previewCertFile(productId, cert, idx) {
+    const files = FileStore.get(productId, cert);
+    const p = DB.products.find(x => x.id === productId);
+    const f = files[idx] || (p && p.certs && p.certs[cert] && (p.certs[cert].fileData||[])[idx]);
+    if (!f || !f.dataUrl) { toast('文件数据不存在', 'error'); return; }
+    const ext = (f.name.split('.').pop()||'').toLowerCase();
+    let content = '';
+    if (['jpg','jpeg','png'].includes(ext)) {
+      content = `<div style="text-align:center;"><img src="${f.dataUrl}" style="max-width:100%;max-height:70vh;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.15);" alt="${f.name}"></div>`;
+    } else if (ext === 'pdf') {
+      content = `<iframe src="${f.dataUrl}" style="width:100%;height:70vh;border:none;border-radius:8px;"></iframe>`;
+    }
+    App.openModal(`预览 - ${f.name}`, content);
+  },
+
+  openView(id) {
+    const p = DB.products.find(x => x.id === id);
+    const certList = Object.entries(p.certs||{}).filter(([,v])=>v.checked);
+    const html = `
+      <div class="detail-section">
+        <div class="detail-section-title">基本信息</div>
+        <div class="detail-grid">
+          <div class="detail-item"><div class="detail-label">产品ID</div><div class="detail-value" style="font-family:monospace;color:var(--primary)">${p.id}</div></div>
+          <div class="detail-item"><div class="detail-label">产品名称</div><div class="detail-value">${p.name}</div></div>
+          <div class="detail-item"><div class="detail-label">所属供应商</div><div class="detail-value">${p.supplierName||'-'}</div></div>
+          <div class="detail-item"><div class="detail-label">状态</div><div class="detail-value">${statusTag(p.status)}</div></div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">类目信息</div>
+        <div class="detail-grid">
+          <div class="detail-item"><div class="detail-label">一级类目</div><div class="detail-value">${p.cat1||'-'}</div></div>
+          <div class="detail-item"><div class="detail-label">二级类目</div><div class="detail-value">${p.cat2||'-'}</div></div>
+          <div class="detail-item"><div class="detail-label">三级类目</div><div class="detail-value">${p.cat3||'-'}</div></div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">销售平台</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">${(p.platforms||[]).map(pl => {
+          const c = PLATFORM_COLORS[pl] || {bg:'#f3f4f6',color:'#6b7280',border:'#d1d5db'};
+          return `<span class="platform-tag" style="background:${c.bg};color:${c.color};border:1px solid ${c.border};padding:4px 12px;font-size:13px;border-radius:6px;">${pl}</span>`;
+        }).join('')||'-'}</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">资质认证</div>
+        ${certList.length ? `<div style="display:flex;flex-wrap:wrap;gap:8px;">
+          ${certList.map(([k,v]) => {
+            const c = CERT_COLORS[k] || CERT_COLORS["其他资质"];
+            return `<div style="background:${c.bg};border:1px solid ${c.border};border-radius:8px;padding:8px 14px;font-size:13px;">
+              <strong style="color:${c.color}">${k}</strong>
+              ${v.date ? ` <span style="color:#6b7280;font-size:12px;">到期：${v.date}</span>` : ''}
+            </div>`;
+          }).join('')}
+        </div>` : '<span style="color:#6b7280">暂无资质认证</span>'}
+      </div>
+      ${p.orderUrl ? `<div class="detail-section"><div class="detail-section-title">下单链接</div>
+        <a href="${p.orderUrl}" target="_blank" style="color:var(--primary)">${p.orderUrl}</a></div>` : ''}
+      ${p.remark ? `<div class="detail-section"><div class="detail-section-title">备注</div><p>${p.remark}</p></div>` : ''}
+    `;
+    App.openModal(`产品详情 - ${p.name}`, html);
+  }
+};
+
+// ============================================================
+// 启动
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  App.init();
+});
+
+</script>
+</body>
+</html>

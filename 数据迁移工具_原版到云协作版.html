@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数据迁移工具 — 原版 → 云协作版</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --primary: #4361ee; --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+  --bg: #f0f2f7; --surface: #fff; --border: #e5e7eb; --text: #1f2937; --text-secondary: #6b7280;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.container { background: var(--surface); border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,.1); padding: 40px; max-width: 700px; width: 100%; }
+h1 { font-size: 24px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+.subtitle { color: var(--text-secondary); font-size: 13px; margin-bottom: 24px; }
+
+.step { margin-bottom: 24px; padding: 20px; border: 1px solid var(--border); border-radius: 10px; background: #fafbfc; }
+.step-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.step-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.step-num.pending { background: #d1d5db; }
+.step-num.active { background: var(--primary); }
+.step-num.done { background: var(--success); }
+.step-num.error { background: var(--danger); }
+.step-title { font-weight: 600; font-size: 15px; }
+.step-desc { color: var(--text-secondary); font-size: 12px; }
+
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; outline: none; transition: all .2s; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: #3a56d4; }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+.btn-success { background: var(--success); color: #fff; }
+.btn-outline { background: #fff; color: var(--text); border: 1px solid var(--border); }
+
+.data-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.summary-card { padding: 14px; border-radius: 8px; background: #fff; border: 1px solid var(--border); text-align: center; }
+.summary-card .num { font-size: 28px; font-weight: 700; }
+.summary-card .label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+.summary-card.warn { border-color: #f59e0b; background: #fffbeb; }
+
+.progress-bar { margin-top: 12px; background: #f3f4f6; border-radius: 6px; height: 8px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--primary); border-radius: 6px; width: 0%; transition: width .3s; }
+
+.log-area { margin-top: 16px; max-height: 300px; overflow-y: auto; background: #1e2a45; color: #a8b8d8; border-radius: 8px; padding: 14px; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.8; }
+.log-line { margin-bottom: 2px; }
+.log-line.ok { color: #10b981; }
+.log-line.warn { color: #f59e0b; }
+.log-line.error { color: #ef4444; }
+.log-line.info { color: #60a5fa; }
+
+.error-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 14px; color: #991b1b; font-size: 13px; margin-top: 12px; display: none; }
+.success-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 14px; color: #166534; font-size: 13px; margin-top: 12px; display: none; }
+
+label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; font-weight: 500; }
+input { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; outline: none; }
+input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67,97,238,.12); }
+.hint { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🔄 数据迁移工具</h1>
+  <p class="subtitle">将原版（单文件版 localStorage）数据迁移到云协作版（Supabase）</p>
+
+  <!-- Step 1: 检测本地数据 -->
+  <div class="step" id="step1">
+    <div class="step-header"><span class="step-num active" id="step1-num">1</span><span class="step-title">检测原版 localStorage 数据</span></div>
+    <div class="data-summary">
+      <div class="summary-card"><div class="num" id="local-supplier-count" style="color:var(--primary)">--</div><div class="label">供应商</div></div>
+      <div class="summary-card"><div class="num" id="local-product-count" style="color:var(--success)">--</div><div class="label">产品</div></div>
+      <div class="summary-card"><div class="num" id="local-file-count" style="color:var(--warning)">--</div><div class="label">资质文件（组）</div></div>
+      <div class="summary-card"><div class="num" id="local-filesize" style="color:var(--text-secondary)">--</div><div class="label">文件总大小</div></div>
+    </div>
+    <div class="error-box" id="no-data-error">未检测到原版数据！请确保在<strong>使用过原版系统的同一浏览器</strong>中打开此页面。</div>
+  </div>
+
+  <!-- Step 2: Supabase 连接 -->
+  <div class="step" id="step2">
+    <div class="step-header"><span class="step-num pending" id="step2-num">2</span><span class="step-title">Supabase 连接配置</span></div>
+    <label>Supabase URL</label>
+    <input type="text" id="sb-url" value="https://hegxivqvjtknzfoogzng.supabase.co" placeholder="https://xxx.supabase.co">
+    <label style="margin-top:12px">Anon Key</label>
+    <input type="text" id="sb-key" value="sb_publishable_Q9SrFkFU3YHbqeTa3cgwDQ_O8M7ufXt" placeholder="sb_publishable_...">
+    <p class="hint">默认使用云协作版的 Supabase 项目，无需修改。</p>
+    <div class="error-box" id="sb-error"></div>
+  </div>
+
+  <!-- Step 3: 执行迁移 -->
+  <div class="step" id="step3">
+    <div class="step-header"><span class="step-num pending" id="step3-num">3</span><span class="step-title">执行数据迁移</span></div>
+    <p class="step-desc">⚠️ 迁移前请确认云协作版中无重要数据，迁移会覆盖同名供应商（按 name 去重），产品按 ID 覆盖。</p>
+    <div style="margin-top:12px; display:flex; gap:10px;">
+      <button class="btn btn-primary" id="migrate-btn" onclick="startMigration()" disabled>开始迁移</button>
+      <button class="btn btn-outline" onclick="location.reload()">重置</button>
+    </div>
+    <div class="progress-bar" style="display:none" id="progress-container">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <div class="log-area" id="log-area" style="display:none"></div>
+    <div class="error-box" id="migrate-error"></div>
+    <div class="success-box" id="migrate-success"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// 1. 读取原版 localStorage 数据
+// ============================================================
+const OLD_DB_KEY = 'pmSystem_db_v1';
+const OLD_FILES_KEY = 'pmSystem_files_v1';
+
+let localData = null;
+let localFiles = null;
+
+function detectLocalData() {
+  const step1Num = document.getElementById('step1-num');
+  const noDataErr = document.getElementById('no-data-error');
+
+  try {
+    const dbRaw = localStorage.getItem(OLD_DB_KEY);
+    const filesRaw = localStorage.getItem(OLD_FILES_KEY);
+
+    if (!dbRaw && !filesRaw) {
+      step1Num.className = 'step-num error';
+      step1Num.textContent = '✕';
+      noDataErr.style.display = 'block';
+      return;
+    }
+
+    localData = dbRaw ? JSON.parse(dbRaw) : { suppliers: [], products: [] };
+    localFiles = filesRaw ? JSON.parse(filesRaw) : {};
+
+    const supplierCount = (localData.suppliers || []).length;
+    const productCount = (localData.products || []).length;
+    const fileGroups = Object.keys(localFiles).length;
+
+    let totalSize = 0;
+    Object.values(localFiles).forEach(files => {
+      files.forEach(f => {
+        if (f.dataUrl) totalSize += f.dataUrl.length * 0.75; // base64 近似字节数
+      });
+    });
+
+    document.getElementById('local-supplier-count').textContent = supplierCount;
+    document.getElementById('local-product-count').textContent = productCount;
+    document.getElementById('local-file-count').textContent = fileGroups;
+    document.getElementById('local-filesize').textContent = totalSize > 0 ? formatSize(totalSize) : '0 KB';
+
+    step1Num.className = 'step-num done';
+    step1Num.textContent = '✓';
+    noDataErr.style.display = 'none';
+
+    if (supplierCount > 0 || productCount > 0) {
+      document.getElementById('migrate-btn').disabled = false;
+    }
+  } catch(e) {
+    step1Num.className = 'step-num error';
+    step1Num.textContent = '✕';
+    noDataErr.style.display = 'block';
+    noDataErr.textContent = '读取数据出错: ' + e.message;
+    console.error(e);
+  }
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(2) + ' MB';
+}
+
+// ============================================================
+// 2. 日志系统
+// ============================================================
+const log = {
+  _el: null,
+  _init() {
+    this._el = document.getElementById('log-area');
+    this._el.style.display = 'block';
+    this._el.innerHTML = '';
+  },
+  _add(msg, cls) {
+    if (!this._el) this._init();
+    const div = document.createElement('div');
+    div.className = 'log-line ' + (cls || '');
+    div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    this._el.appendChild(div);
+    this._el.scrollTop = this._el.scrollHeight;
+  },
+  ok(msg) { this._add(msg, 'ok'); },
+  warn(msg) { this._add(msg, 'warn'); },
+  error(msg) { this._add(msg, 'error'); },
+  info(msg) { this._add(msg, 'info'); }
+};
+
+// ============================================================
+// 3. Supabase 连接
+// ============================================================
+let sb = null;
+
+function initSB() {
+  const url = document.getElementById('sb-url').value.trim();
+  const key = document.getElementById('sb-key').value.trim();
+  const errBox = document.getElementById('sb-error');
+  errBox.style.display = 'none';
+
+  if (!url || !key) {
+    errBox.textContent = '请填写 Supabase URL 和 Anon Key';
+    errBox.style.display = 'block';
+    return false;
+  }
+  try {
+    sb = window.supabase.createClient(url, key);
+    document.getElementById('step2-num').className = 'step-num done';
+    document.getElementById('step2-num').textContent = '✓';
+    return true;
+  } catch(e) {
+    errBox.textContent = '连接失败: ' + e.message;
+    errBox.style.display = 'block';
+    return false;
+  }
+}
+
+// ============================================================
+// 4. 迁移逻辑
+// ============================================================
+async function startMigration() {
+  if (!localData || (!localData.suppliers?.length && !localData.products?.length)) {
+    document.getElementById('migrate-error').textContent = '没有可迁移的数据';
+    document.getElementById('migrate-error').style.display = 'block';
+    return;
+  }
+  if (!initSB()) return;
+
+  const btn = document.getElementById('migrate-btn');
+  btn.disabled = true;
+  btn.textContent = '迁移中...';
+  document.getElementById('migrate-error').style.display = 'none';
+  document.getElementById('migrate-success').style.display = 'none';
+  document.getElementById('progress-container').style.display = 'block';
+  document.getElementById('step3-num').className = 'step-num active';
+  document.getElementById('step3-num').textContent = '…';
+
+  log._init();
+  log.info('开始数据迁移...');
+  log.info(`本地数据: ${localData.suppliers?.length || 0} 供应商, ${localData.products?.length || 0} 产品, ${Object.keys(localFiles || {}).length} 组资质文件`);
+
+  const progressFill = document.getElementById('progress-fill');
+  let migratedSuppliers = 0;
+  let migratedProducts = 0;
+  let migratedFiles = 0;
+  let skippedFiles = 0;
+
+  try {
+    // --- 4a. 迁移供应商 ---
+    const supplierIdMap = new Map(); // oldId → newId
+    const suppliers = localData.suppliers || [];
+
+    if (suppliers.length > 0) {
+      log.info(`--- 迁移供应商 (${suppliers.length} 条) ---`);
+      for (let i = 0; i < suppliers.length; i++) {
+        const s = suppliers[i];
+        const row = mapSupplier(s);
+        try {
+          // 用 upsert（name 唯一）避免重复
+          const { data, error } = await sb.from('suppliers').upsert(row, { onConflict: 'name' }).select('id').single();
+          if (error) throw error;
+          if (data) {
+            supplierIdMap.set(s.id, data.id);
+            log.ok(`供应商 [${i+1}/${suppliers.length}]: ${s.name} → ID=${data.id}`);
+          }
+          migratedSuppliers++;
+        } catch(e) {
+          log.error(`供应商 [${i+1}]: ${s.name} 迁移失败: ${e.message}`);
+        }
+        updateProgress(i + 1, suppliers.length + (localData.products?.length || 0), progressFill);
+      }
+    }
+
+    // --- 4b. 迁移产品 ---
+    const products = localData.products || [];
+    if (products.length > 0) {
+      log.info(`--- 迁移产品 (${products.length} 条) ---`);
+      const supplierOffset = suppliers.length;
+      for (let i = 0; i < products.length; i++) {
+        const p = products[i];
+        const newSupplierId = supplierIdMap.get(p.supplierId) || null;
+        // 从已迁移的 supplier 中查找名称
+        const sup = suppliers.find(s => s.id === p.supplierId);
+        const row = mapProduct(p, newSupplierId, sup?.name);
+        try {
+          const { error } = await sb.from('products').upsert(row, { onConflict: 'id' });
+          if (error) throw error;
+          log.ok(`产品 [${i+1}/${products.length}]: ${p.id} ${p.name}`);
+          migratedProducts++;
+        } catch(e) {
+          log.error(`产品 [${i+1}]: ${p.id} ${p.name} 迁移失败: ${e.message}`);
+        }
+        updateProgress(supplierOffset + i + 1, suppliers.length + products.length, progressFill);
+      }
+    }
+
+    // --- 4c. 迁移资质文件 ---
+    if (localFiles && Object.keys(localFiles).length > 0) {
+      log.info(`--- 迁移资质文件 (${Object.keys(localFiles).length} 组) ---`);
+      const fileEntries = Object.entries(localFiles);
+      let fi = 0;
+      for (const [key, fileArr] of fileEntries) {
+        fi++;
+        const [productId, certName] = key.split('::');
+        if (!productId || !certName) { log.warn(`跳过无效key: ${key}`); continue; }
+        if (!fileArr || fileArr.length === 0) { skippedFiles++; continue; }
+
+        for (const f of fileArr) {
+          if (!f.dataUrl) { skippedFiles++; continue; }
+          try {
+            const blob = dataURLtoBlob(f.dataUrl);
+            const storagePath = `${productId}/${certName}/${Date.now()}_${f.name || 'file'}`;
+            const { data: upData, error: upErr } = await sb.storage.from('cert-files').upload(storagePath, blob);
+            if (upErr) {
+              // 如果是 duplicate，尝试跳过
+              if (upErr.message?.includes('Duplicate') || upErr.message?.includes('already exists')) {
+                log.warn(`文件已存在，跳过: ${key} / ${f.name}`);
+                skippedFiles++;
+                continue;
+              }
+              throw upErr;
+            }
+            // 记录 cert_files 表
+            const { error: recErr } = await sb.from('cert_files').insert({
+              product_id: productId,
+              cert_name: certName,
+              file_name: f.name || 'file',
+              file_size: blob.size,
+              storage_path: storagePath,
+              mime_type: f.dataUrl.split(';')[0]?.replace('data:', '') || 'application/octet-stream'
+            });
+            if (recErr) {
+              log.warn(`cert_files 记录写入失败: ${recErr.message}`);
+            }
+            migratedFiles++;
+            log.ok(`资质文件 [${fi}/${fileEntries.length}]: ${key} / ${f.name}`);
+          } catch(e) {
+            log.error(`资质文件上传失败 [${key}/${f.name}]: ${e.message}`);
+          }
+        }
+      }
+    }
+
+    // --- 完成 ---
+    progressFill.style.width = '100%';
+    document.getElementById('step3-num').className = 'step-num done';
+    document.getElementById('step3-num').textContent = '✓';
+    btn.textContent = '迁移完成';
+    btn.className = 'btn btn-success';
+
+    const msg = `✅ 迁移完成！
+· 供应商: ${migratedSuppliers} 条
+· 产品: ${migratedProducts} 条
+· 资质文件: ${migratedFiles} 个
+· 跳过文件: ${skippedFiles} 个
+请打开云协作版登录查看数据。`;
+    document.getElementById('migrate-success').textContent = msg;
+    document.getElementById('migrate-success').style.display = 'block';
+    log.ok('全部迁移完成！');
+    log.info(msg.replace(/\n/g, ' '));
+  } catch(e) {
+    document.getElementById('step3-num').className = 'step-num error';
+    document.getElementById('step3-num').textContent = '✕';
+    btn.textContent = '重试';
+    btn.disabled = false;
+    btn.className = 'btn btn-danger';
+    document.getElementById('migrate-error').textContent = '迁移出错: ' + e.message;
+    document.getElementById('migrate-error').style.display = 'block';
+    log.error('迁移中断: ' + e.message);
+  }
+}
+
+function updateProgress(current, total, fillEl) {
+  const pct = Math.round((current / total) * 100);
+  fillEl.style.width = pct + '%';
+  document.getElementById('step3-num').textContent = pct + '%';
+}
+
+// ============================================================
+// 5. 字段映射
+// ============================================================
+function mapSupplier(s) {
+  return {
+    name: s.name || '',
+    contact: s.contact || '',
+    phone: s.phone || '',
+    province: s.province || null,
+    city: s.city || null,
+    category: s.category || '',
+    business: s.business || '',
+    service: s.service || '',
+    rating: s.rating || 'B级',
+    status: s.status || '合作中',
+    payment: s.payment || '月结',
+    return_policy: s.returnPolicy || '',
+    shop_url: s.shopUrl || '',
+    order_url: s.orderUrl || '',
+    address: s.address || '',
+    founded: s.founded || null,
+    employees: s.employees || '',
+    annual: s.annual || '',
+    qualification: s.qualification || '',
+    remark: s.remark || '',
+    created_by: null
+  };
+}
+
+function mapProduct(p, newSupplierId, supplierName) {
+  // 处理 certs: 从原版格式 { certName: { checked, date, files, fileData } }
+  // 转为 Supabase 格式 { certName: { checked, date } }
+  const certs = {};
+  if (p.certs) {
+    Object.entries(p.certs).forEach(([k, v]) => {
+      if (v && v.checked) {
+        certs[k] = { checked: true, date: v.date || '' };
+      } else {
+        certs[k] = { checked: false, date: '' };
+      }
+    });
+  }
+
+  return {
+    id: p.id,
+    name: p.name || '',
+    cat1: p.cat1 || '',
+    cat2: p.cat2 || '',
+    cat3: p.cat3 || '',
+    supplier_id: newSupplierId,
+    supplier_name: supplierName || p.supplierName || '',
+    platforms: p.platforms || [],
+    status: p.status || '上架中',
+    order_url: p.orderUrl || '',
+    remark: p.remark || '',
+    certs: certs,
+    created_by: null
+  };
+}
+
+// ============================================================
+// 6. 工具函数
+// ============================================================
+function dataURLtoBlob(dataurl) {
+  const arr = dataurl.split(',');
+  const mime = arr[0].match(/:(.*?);/);
+  const mimeType = mime ? mime[1] : 'application/octet-stream';
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) { u8arr[n] = bstr.charCodeAt(n); }
+  return new Blob([u8arr], { type: mimeType });
+}
+
+// ============================================================
+// 初始化
+// ============================================================
+detectLocalData();
+</script>
+</body>
+</html>
